@@ -1,0 +1,5 @@
+{
+  "name": "ABA Nexus",
+  "description": "Uma plataforma SaaS completa para gestão de terapia ABA, com coleta de dados em tempo real, insights via IA, perfis de pacientes e diário de comunicação para terapeutas e pais.",
+  "requestFramePermissions": []
+}

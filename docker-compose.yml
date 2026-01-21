@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  dom-azul:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dom-azul-app
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Optional: Add Traefik labels for reverse proxy
+# labels:
+#   - "traefik.enable=true"
+#   - "traefik.http.routers.dom-azul.rule=Host(`app.domazul.com`)"
+#   - "traefik.http.routers.dom-azul.entrypoints=websecure"
+#   - "traefik.http.routers.dom-azul.tls.certresolver=letsencrypt"
