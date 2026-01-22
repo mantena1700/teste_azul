@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS clinics (
 -- 2. USERS (Usuários)
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(50) PRIMARY KEY,
-    clinic_id VARCHAR(50) REFERENCES clinics(id) ON DELETE SET NULL,
+    clinic_id VARCHAR(50),  -- No foreign key to allow users without clinics
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
