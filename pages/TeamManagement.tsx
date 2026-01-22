@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { MOCK_FINANCIAL_SERVICES } from '../constants';
-import { User, ContractType, Patient, ScheduleItem, ServiceItem } from '../types';
+import { User, ContractType, Patient, ScheduleItem, ServiceItem, Clinic } from '../types';
 import { Users, Clock, Calendar, DollarSign, Plus, Save, X, Search, Briefcase, FileText, CheckSquare, Settings, UserPlus, ChevronRight, Phone, Mail, MapPin, Star, Trash2 } from 'lucide-react';
 import { LocalDatabase } from '../services/LocalDatabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,6 +26,21 @@ export const TeamManagement: React.FC = () => {
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ day: number, time: string } | null>(null);
     const [assignForm, setAssignForm] = useState<{ patientId: string, serviceId: string }>({ patientId: '', serviceId: '' });
+
+    // Clinics list for SAAS_ADMIN
+    const [clinics, setClinics] = useState<{ id: string; name: string }[]>([]);
+    const [selectedClinicId, setSelectedClinicId] = useState<string>('');
+
+    // Load clinics for SAAS_ADMIN
+    React.useEffect(() => {
+        if (currentUser?.role === 'SAAS_ADMIN') {
+            const allClinics = LocalDatabase.getClinics();
+            setClinics(allClinics.map(c => ({ id: c.id, name: c.name })));
+            if (allClinics.length > 0 && !selectedClinicId) {
+                setSelectedClinicId(allClinics[0].id);
+            }
+        }
+    }, [currentUser?.role]);
 
     // Form State for New User
     const [newUser, setNewUser] = useState<Partial<User>>({
@@ -112,9 +127,22 @@ export const TeamManagement: React.FC = () => {
             return;
         }
 
-        // SAAS_ADMIN can create users for clinic-1 by default, or we need a clinic selector
-        // For now, if no clinicId (SAAS_ADMIN), default to 'clinic-1'
-        const targetClinicId = currentUser?.clinicId || 'clinic-1';
+        // SAAS_ADMIN must select a clinic; Regular ADMIN uses their own clinicId
+        let targetClinicId: string;
+        if (currentUser?.role === 'SAAS_ADMIN') {
+            if (!selectedClinicId) {
+                alert("Por favor, selecione uma clínica para este colaborador.");
+                return;
+            }
+            targetClinicId = selectedClinicId;
+        } else {
+            targetClinicId = currentUser?.clinicId || '';
+        }
+
+        if (!targetClinicId) {
+            alert("Erro: Nenhuma clínica disponível. Crie uma clínica primeiro no Painel SaaS.");
+            return;
+        }
 
         const createdUser: User = {
             id: `u-${Date.now()}`,
@@ -142,7 +170,9 @@ export const TeamManagement: React.FC = () => {
             password: '',
             financial: { ...newUser.financial }
         });
-        alert(`Colaborador "${createdUser.name}" cadastrado com sucesso!\n\nLogin: ${createdUser.email}\nSenha: ${createdUser.password}`);
+
+        const clinicName = clinics.find(c => c.id === targetClinicId)?.name || targetClinicId;
+        alert(`Colaborador "${createdUser.name}" cadastrado com sucesso!\n\nClínica: ${clinicName}\nLogin: ${createdUser.email}\nSenha: ${createdUser.password}`);
     };
 
     const openAssignModal = (day: number, time: string) => {
@@ -524,6 +554,26 @@ export const TeamManagement: React.FC = () => {
                         </div>
 
                         <div className="p-6 overflow-y-auto space-y-6">
+                            {/* Clinic Selector for SAAS_ADMIN */}
+                            {currentUser?.role === 'SAAS_ADMIN' && (
+                                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                    <h4 className="text-sm font-bold text-purple-900 uppercase tracking-wide mb-2">Selecione a Clínica</h4>
+                                    {clinics.length === 0 ? (
+                                        <p className="text-sm text-red-600">⚠️ Nenhuma clínica cadastrada. Crie uma clínica no Painel SaaS primeiro.</p>
+                                    ) : (
+                                        <select
+                                            className="w-full border border-purple-300 rounded-lg p-2 outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                                            value={selectedClinicId}
+                                            onChange={(e) => setSelectedClinicId(e.target.value)}
+                                        >
+                                            {clinics.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Basic Info */}
                             <div>
                                 <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b border-gray-200 pb-1 mb-3">Dados Pessoais</h4>
