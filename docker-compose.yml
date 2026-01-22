@@ -1,26 +1,39 @@
 version: '3.8'
 
 services:
-  dom-azul:
+  # Frontend (React/Vite)
+  frontend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: dom-azul-app
+    container_name: dom-azul-frontend
     restart: unless-stopped
     ports:
       - "4000:80"
     environment:
       - NODE_ENV=production
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    depends_on:
+      - backend
 
-# Optional: Add Traefik labels for reverse proxy
-# labels:
-#   - "traefik.enable=true"
-#   - "traefik.http.routers.dom-azul.rule=Host(`app.domazul.com`)"
-#   - "traefik.http.routers.dom-azul.entrypoints=websecure"
-#   - "traefik.http.routers.dom-azul.tls.certresolver=letsencrypt"
+  # Backend API (Node.js/Express)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dom-azul-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_HOST=host.docker.internal
+      - DB_PORT=5432
+      - DB_NAME=domazul
+      - DB_USER=domazul_user
+      - DB_PASSWORD=DomAzul@2026
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+# Note: PostgreSQL runs directly on the host (not in Docker)
+# This allows persistent data and easier management
