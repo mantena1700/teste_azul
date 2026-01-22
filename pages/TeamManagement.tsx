@@ -121,7 +121,7 @@ export const TeamManagement: React.FC = () => {
 
     // --- ACTIONS ---
 
-    const handleAddUser = () => {
+    const handleAddUser = async () => {
         if (!newUser.name || !newUser.email || !newUser.password) {
             alert("Por favor, preencha nome, e-mail e senha.");
             return;
@@ -157,22 +157,37 @@ export const TeamManagement: React.FC = () => {
         };
 
         console.log('🆕 Creating user:', createdUser);
-        addUser(createdUser);
 
-        // Verify it was saved
-        const allUsersNow = LocalDatabase.getUsers();
-        console.log('📦 Users after save:', allUsersNow.length, allUsersNow.map(u => u.email));
+        // Save to PostgreSQL via API
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(createdUser)
+            });
+            const result = await response.json();
 
-        setIsAddModalOpen(false);
-        setNewUser({
-            role: 'THERAPIST',
-            email: '',
-            password: '',
-            financial: { ...newUser.financial }
-        });
+            if (result.success) {
+                setIsAddModalOpen(false);
+                setNewUser({
+                    role: 'THERAPIST',
+                    email: '',
+                    password: '',
+                    financial: { ...newUser.financial }
+                });
 
-        const clinicName = clinics.find(c => c.id === targetClinicId)?.name || targetClinicId;
-        alert(`Colaborador "${createdUser.name}" cadastrado com sucesso!\n\nClínica: ${clinicName}\nLogin: ${createdUser.email}\nSenha: ${createdUser.password}`);
+                const clinicName = clinics.find(c => c.id === targetClinicId)?.name || targetClinicId;
+                alert(`✅ Colaborador "${createdUser.name}" cadastrado com sucesso!\n\nClínica: ${clinicName}\nLogin: ${createdUser.email}\nSenha: ${createdUser.password}\n\nEste usuário agora pode logar de QUALQUER dispositivo!`);
+
+                // Refresh users list
+                window.location.reload();
+            } else {
+                alert(`❌ Erro ao cadastrar: ${result.error || 'Erro desconhecido'}`);
+            }
+        } catch (error) {
+            console.error('Error creating user:', error);
+            alert('❌ Erro de conexão com o servidor. Tente novamente.');
+        }
     };
 
     const openAssignModal = (day: number, time: string) => {
