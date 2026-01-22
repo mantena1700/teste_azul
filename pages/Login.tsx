@@ -116,21 +116,6 @@ export const Login: React.FC = () => {
               </button>
             </div>
 
-            <div className="mt-6 border-t border-gray-100 pt-6">
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm('ATENÇÃO: ISSO APAGARÁ TUDO! Você voltará apenas com o usuário "admin@domazul.com" (Senha: DomAzul@2026). TEM CERTEZA?')) {
-                    // Call directly, no dynamic import
-                    LocalDatabase.factoryReset();
-                    alert("Sistema resetado com sucesso! Logue com o admin@domazul.com");
-                  }
-                }}
-                className="w-full flex justify-center py-2 px-4 border border-red-100 rounded-lg shadow-sm text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 focus:outline-none transition-colors"
-              >
-                ⚠️ Resetar Sistema (Fábrica)
-              </button>
-            </div>
           </form>
 
           {/* Credentials section removed for production */}
