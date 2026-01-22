@@ -10,16 +10,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-import { LocalDatabase } from '../services/LocalDatabase';
+// API URL - uses environment variable or defaults to current domain
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
 
   // Check for persisted user on mount
   useEffect(() => {
-    // Ensure DB is seeded so login works extensively
-    LocalDatabase.initialize();
-
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -27,20 +25,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      // Call the PostgreSQL backend API
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-    const users = LocalDatabase.getUsers();
-    const foundUser = users.find(
-      u => u.email?.toLowerCase() === email.toLowerCase() && u.password === password
-    );
+      const data = await response.json();
 
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
-      return true;
+      if (data.success && data.user) {
+        setUser(data.user);
+        localStorage.setItem('currentUser', JSON.stringify(data.user));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
