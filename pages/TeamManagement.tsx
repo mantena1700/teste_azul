@@ -127,21 +127,16 @@ export const TeamManagement: React.FC = () => {
             return;
         }
 
-        // SAAS_ADMIN must select a clinic; Regular ADMIN uses their own clinicId
-        let targetClinicId: string;
+        // SAAS_ADMIN can create users without a clinic, Regular ADMIN uses their own clinicId
+        let targetClinicId: string = '';
         if (currentUser?.role === 'SAAS_ADMIN') {
-            if (!selectedClinicId) {
-                alert("Por favor, selecione uma clínica para este colaborador.");
-                return;
-            }
-            targetClinicId = selectedClinicId;
+            targetClinicId = selectedClinicId || ''; // Can be empty for SAAS_ADMIN
         } else {
             targetClinicId = currentUser?.clinicId || '';
-        }
-
-        if (!targetClinicId) {
-            alert("Erro: Nenhuma clínica disponível. Crie uma clínica primeiro no Painel SaaS.");
-            return;
+            if (!targetClinicId) {
+                alert("Erro: Você não está vinculado a uma clínica.");
+                return;
+            }
         }
 
         const createdUser: User = {
