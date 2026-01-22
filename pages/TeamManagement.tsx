@@ -122,6 +122,9 @@ export const TeamManagement: React.FC = () => {
     // --- ACTIONS ---
 
     const handleAddUser = async () => {
+        console.log('🚀 VERSÃO NOVA DO CÓDIGO - handleAddUser chamado!');
+        alert('🚀 CÓDIGO NOVO CARREGADO! Agora vou criar o usuário...');
+
         if (!newUser.name || !newUser.email || !newUser.password) {
             alert("Por favor, preencha nome, e-mail e senha.");
             return;
