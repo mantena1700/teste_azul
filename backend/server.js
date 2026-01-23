@@ -132,6 +132,18 @@ app.put('/api/users/:id', async (req, res) => {
     }
 });
 
+app.delete('/api/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check if user is being used elsewhere first? (Optional)
+        await pool.query('DELETE FROM users WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete user error:', err);
+        res.status(500).json({ error: 'Server error', details: err.message });
+    }
+});
+
 // ==================== CLINICS ====================
 app.get('/api/clinics', async (req, res) => {
     try {
@@ -435,6 +447,77 @@ app.delete('/api/appointments/:id', async (req, res) => {
     }
 });
 
+// ==================== TIME LOGS (PONTO) ====================
+app.get('/api/timelogs', async (req, res) => {
+    try {
+        const { userId } = req.query;
+        let query = 'SELECT * FROM time_logs';
+        let params = [];
+        if (userId) {
+            query += ' WHERE user_id = $1';
+            params.push(userId);
+        }
+        query += ' ORDER BY clock_in DESC';
+        const result = await pool.query(query, params);
+        res.json(result.rows.map(l => ({
+            id: l.id,
+            userId: l.user_id,
+            date: l.date,
+            clockIn: Number(l.clock_in),
+            clockOut: l.clock_out ? Number(l.clock_out) : null,
+            type: l.type,
+            status: l.status,
+            justification: l.justification,
+            rejectionReason: l.rejection_reason,
+            relatedSessionStart: l.related_session_start ? Number(l.related_session_start) : null,
+            photoUrl: l.photo_url
+        })));
+    } catch (err) {
+        console.error('Get timelogs error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/timelogs', async (req, res) => {
+    try {
+        const l = req.body;
+        const result = await pool.query(
+            `INSERT INTO time_logs (id, user_id, date, clock_in, clock_out, type, status, justification, related_session_start, photo_url)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+             RETURNING *`,
+            [l.id, l.userId, l.date, l.clockIn, l.clockOut, l.type, l.status, l.justification, l.relatedSessionStart, l.photoUrl]
+        );
+        res.json({ success: true, log: result.rows[0] });
+    } catch (err) {
+        console.error('Create timelog error:', err);
+        res.status(500).json({ error: 'Server error', details: err.message });
+    }
+});
+
+app.put('/api/timelogs/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, clockOut, rejectionReason } = req.body;
+
+        let query = 'UPDATE time_logs SET updated_at = CURRENT_TIMESTAMP';
+        let params = [];
+        let pIndex = 1;
+
+        if (status) { query += `, status = $${pIndex++}`; params.push(status); }
+        if (clockOut) { query += `, clock_out = $${pIndex++}`; params.push(clockOut); }
+        if (rejectionReason) { query += `, rejection_reason = $${pIndex++}`; params.push(rejectionReason); }
+
+        params.push(id);
+        query += ` WHERE id = $${pIndex} RETURNING *`;
+
+        const result = await pool.query(query, params);
+        res.json({ success: true, log: result.rows[0] });
+    } catch (err) {
+        console.error('Update timelog error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // ==================== ACTIVITIES ====================
 app.get('/api/activities', async (req, res) => {
     try {
@@ -534,6 +617,91 @@ app.post('/api/transactions', async (req, res) => {
     } catch (err) {
         console.error('Create transaction error:', err);
         res.status(500).json({ error: 'Server error', details: err.message });
+    }
+});
+
+app.put('/api/transactions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        const fields = [];
+        const values = [];
+        let pIndex = 1;
+
+        if (updates.status) { fields.push(`status = $${pIndex++}`); values.push(updates.status); }
+        if (updates.amount) { fields.push(`amount = $${pIndex++}`); values.push(updates.amount); }
+
+        values.push(id);
+        const query = `UPDATE financial_transactions SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${pIndex} RETURNING *`;
+        const result = await pool.query(query, values);
+        res.json({ success: true, transaction: result.rows[0] });
+    } catch (err) {
+        console.error('Update transaction error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.delete('/api/transactions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM financial_transactions WHERE id = $1', [id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Delete transaction error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ==================== FINANCIAL SERVICES ====================
+app.get('/api/financial-services', async (req, res) => {
+    try {
+        const { clinicId } = req.query;
+        let query = 'SELECT * FROM financial_services';
+        let params = [];
+        if (clinicId) { query += ' WHERE clinic_id = $1'; params.push(clinicId); }
+        const result = await pool.query(query, params);
+        res.json(result.rows.map(s => ({
+            id: s.id,
+            clinicId: s.clinic_id,
+            name: s.name,
+            defaultPrice: parseFloat(s.default_price),
+            category: s.category,
+            description: s.description
+        })));
+    } catch (err) {
+        console.error('Get financial services error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.post('/api/financial-services', async (req, res) => {
+    try {
+        const s = req.body;
+        const result = await pool.query(
+            `INSERT INTO financial_services (id, clinic_id, name, default_price, category, description)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [s.id || `fs-${Date.now()}`, s.clinicId, s.name, s.defaultPrice, s.category, s.description]
+        );
+        res.json({ success: true, service: result.rows[0] });
+    } catch (err) {
+        console.error('Create financial service error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.put('/api/financial-services/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, defaultPrice } = req.body;
+        await pool.query(
+            'UPDATE financial_services SET name = $2, default_price = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+            [id, name, defaultPrice]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Update financial service error:', err);
+        res.status(500).json({ error: 'Server error' });
     }
 });
 

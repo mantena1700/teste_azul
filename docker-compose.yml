@@ -9,11 +9,14 @@ services:
     container_name: dom-azul-frontend
     restart: unless-stopped
     ports:
-      - "4000:80"
+      - "80:80" # Standard web port
     environment:
       - NODE_ENV=production
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    networks:
+      - dom-azul-net
 
   # Backend API (Node.js/Express)
   backend:
@@ -34,6 +37,17 @@ services:
       - DB_PASSWORD=DomAzul@2026
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3001/api/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dom-azul-net
+
+networks:
+  dom-azul-net:
+    driver: bridge
 
 # Note: PostgreSQL runs directly on the host (not in Docker)
 # This allows persistent data and easier management
