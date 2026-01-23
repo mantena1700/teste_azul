@@ -200,6 +200,12 @@ export interface ScheduleItem {
   therapistId: string;
 }
 
+export interface Guardian {
+  name: string;
+  phone: string;
+  relationship: string;
+}
+
 export interface Patient {
   id: string;
   name: string;
@@ -213,6 +219,7 @@ export interface Patient {
   photoUrl?: string;
   guardianIds?: string[]; // IDs for Users with role 'PARENT'
   guardianNames?: string[]; // Fallback for display or non-registered parents
+  guardianDetails?: Guardian[]; // Structured guardian info
   safetyPlan?: SafetyPlanStep[];
   homeTasks?: HomeTask[];
   documents?: DocumentFile[];
