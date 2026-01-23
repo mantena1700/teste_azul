@@ -130,7 +130,6 @@ export const TimeClock: React.FC = () => {
                             entityId: user.id,
                             entityName: user.name,
                             paymentMethod: 'TRANSFER',
-                            paymentMethod: 'TRANSFER',
                             isSystemGenerated: true,
                             costCenter: 'RH',
                             // @ts-ignore
