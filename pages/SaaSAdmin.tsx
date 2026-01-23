@@ -322,8 +322,9 @@ export const SaaSAdmin: React.FC = () => {
     };
 
     const handleSaveUser = async () => {
-        if (!editingUser.name || !editingUser.email || !editingUser.clinicId) {
-            alert("Nome, Email e Clínica são obrigatórios.");
+        // Validation relaxed: Clinic is OPTIONAL for testing purposes
+        if (!editingUser.name || !editingUser.email) {
+            alert("Nome e Email são obrigatórios.");
             return;
         }
 

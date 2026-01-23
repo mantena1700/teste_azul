@@ -1,6 +1,6 @@
 // API Service - Replaces LocalDatabase for production PostgreSQL backend
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Helper for API calls
 async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
