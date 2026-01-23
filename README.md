@@ -1,117 +1,81 @@
 # DOM Azul - Plataforma de Gestão ABA
 
+Bienvenido à documentação oficial do projeto DOM Azul.
+
+## 📚 Documentação por Módulo
+
+Para facilitar o desenvolvimento e manutenção, a documentação foi dividida por áreas:
+
+- **[🤖 Backend / API](./backend/README.md)**: Estrutura do servidor, conexões com banco de dados e padrões de API.
+- **[🎨 Frontend Pages](./pages/README.md)**: Documentação das telas principais, roteamento e lógica de negócio.
+- **[🧩 Components](./components/README.md)**: Biblioteca de componentes reutilizáveis e UI.
+- **[🔌 Services](./services/README.md)**: Integração com a API e helpers de comunicação.
+- **[💾 Database](./database/README.md)**: Esquema do banco de dados (PostgreSQL) e scripts de migração.
+- **[🔄 Contexts](./contexts/README.md)**: Gerenciamento de estado global (Auth, Data).
+
+---
+
 ## 🚀 Deploy em VPS com Docker
 
 ### Pré-requisitos
-- VPS com Ubuntu 20.04+ ou similar
-- Docker e Docker Compose instalados
-- Porta 80 liberada no firewall
+- VPS com Ubuntu 20.04+
+- Git, Docker e Docker Compose instalados
 
 ### Instalação Rápida
 
-1. **Clone ou copie os arquivos para a VPS:**
+1. **Clone o repositório:**
 ```bash
-# Via Git (se tiver repositório)
 git clone <seu-repositorio> /opt/dom-azul
 cd /opt/dom-azul
-
-# Ou via SCP (copiar do seu PC)
-scp -r ./* usuario@seu-vps:/opt/dom-azul/
 ```
 
-2. **Crie o arquivo .env (opcional - para API Gemini):**
+2. **Inicie o sistema:**
 ```bash
-cd /opt/dom-azul
-echo "GEMINI_API_KEY=sua-chave-aqui" > .env
+chmod +x deploy.sh
+./deploy.sh
 ```
 
-3. **Build e start:**
-```bash
-docker-compose up -d --build
-```
+Isso irá:
+- Baixar as últimas atualizações.
+- Construir os containers Docker (Frontend + Backend).
+- Iniciar o banco de dados PostgreSQL.
+- Aplicar as migrações de esquema automaticamente.
 
-4. **Verifique se está rodando:**
-```bash
-docker-compose ps
-docker-compose logs -f
-```
-
-5. **Acesse no navegador:**
-```
-http://IP-DA-SUA-VPS
-```
+3. **Acesse no navegador:**
+`http://IP-DA-SUA-VPS` ou `https://seu-dominio.com` (se configurado).
 
 ### Credenciais Iniciais
 
-O sistema inicia **LIMPO** (sem dados mockados).
+O sistema inicia com um usuário Super Admin padrão:
+- **Email**: `admin@domazul.com`
+- **Senha**: `DomAzul@2026`
 
-**Login Inicial:**
-- Email: `admin@domazul.com`
-- Senha: `DomAzul@2026`
+---
 
-Este é o Super Admin que pode criar clínicas e usuários.
-
-### Comandos Úteis
-
-```bash
-# Ver logs
-docker-compose logs -f
-
-# Reiniciar
-docker-compose restart
-
-# Parar
-docker-compose down
-
-# Rebuild após atualizações
-docker-compose up -d --build
-
-# Ver status
-docker-compose ps
-```
-
-### Configuração com HTTPS (Recomendado)
-
-Para produção, use um proxy reverso com SSL. Exemplo com Traefik:
-
-```yaml
-# Adicione ao docker-compose.yml
-networks:
-  web:
-    external: true
-
-services:
-  dom-azul:
-    # ... configurações existentes ...
-    networks:
-      - web
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dom-azul.rule=Host(`app.seudominio.com`)"
-      - "traefik.http.routers.dom-azul.entrypoints=websecure"
-      - "traefik.http.routers.dom-azul.tls.certresolver=letsencrypt"
-```
-
-### Estrutura de Arquivos
+## 🏗️ Estrutura do Projeto
 
 ```
 dom-azul/
-├── Dockerfile          # Build da aplicação
-├── docker-compose.yml  # Orquestração
-├── nginx.conf          # Configuração do servidor web
-├── .dockerignore       # Arquivos ignorados no build
-├── .env                # Variáveis de ambiente (criar manualmente)
-└── src/                # Código fonte
+├── backend/            # Servidor Node.js/Express
+├── components/         # Componentes UI reutilizáveis (React)
+├── contexts/           # Estado Global (React Context)
+├── database/           # Scripts SQL e Schema
+├── pages/              # Telas da aplicação
+├── services/           # Comunicação com API
+├── deploy.sh           # Script de automação de deploy
+├── docker-compose.yml  # Orquestração de containers
+└── README.md           # Este arquivo
 ```
 
-### Backup de Dados
+## 🛠️ Comandos Úteis
 
-⚠️ **IMPORTANTE**: Esta versão usa localStorage (dados no navegador).
-Cada usuário/dispositivo tem seus próprios dados.
+```bash
+# Ver logs em tempo real
+docker-compose logs -f
 
-Para um sistema multi-usuário real, será necessário implementar um backend com banco de dados.
+# Reiniciar serviços
+docker-compose restart
 
-### Suporte
-
-- Versão: 1.0.0 (SPA com localStorage)
-- Próximas versões: Backend com PostgreSQL/MongoDB
+# Parar tudo
+docker-compose down
+```
