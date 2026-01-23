@@ -156,6 +156,40 @@ CREATE INDEX IF NOT EXISTS idx_appointments_clinic ON appointments(clinic_id);
 CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_clinic ON financial_transactions(clinic_id);
 
+-- 9. FINANCIAL SERVICES (Catálogo de Serviços)
+CREATE TABLE IF NOT EXISTS financial_services (
+    id VARCHAR(50) PRIMARY KEY,
+    clinic_id VARCHAR(50) REFERENCES clinics(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    default_price DECIMAL(10,2) NOT NULL,
+    category VARCHAR(100),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. TIME LOGS (Ponto Eletrônico)
+CREATE TABLE IF NOT EXISTS time_logs (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+    date DATE NOT NULL,
+    clock_in BIGINT NOT NULL,
+    clock_out BIGINT,
+    type VARCHAR(20) DEFAULT 'REGULAR', -- 'REGULAR' or 'MANUAL'
+    status VARCHAR(20) DEFAULT 'APPROVED', -- 'APPROVED', 'PENDING', 'REJECTED'
+    justification TEXT,
+    rejection_reason TEXT,
+    related_session_start BIGINT,
+    photo_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_financial_services_clinic ON financial_services(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_time_logs_user ON time_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_time_logs_date ON time_logs(date);
+
 -- Insert default super admin (only if not exists)
 INSERT INTO users (id, clinic_id, name, email, password, role, avatar_url)
 VALUES (
