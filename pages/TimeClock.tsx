@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { MOCK_USERS } from '../constants';
 import { TimeLog } from '../types';
+import * as ApiService from '../services/ApiService';
 import { Clock, LogIn, LogOut, AlertCircle, Calendar, Plus, Save, X, Download, HelpCircle, Check, Ban, Camera, FileText, Upload } from 'lucide-react';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAuth } from '../contexts/AuthContext';
-import { LocalDatabase } from '../services/LocalDatabase';
 
 export const TimeClock: React.FC = () => {
     const { user } = useAuth();
@@ -18,27 +18,36 @@ export const TimeClock: React.FC = () => {
     // Load Logs on Mount
     useEffect(() => {
         refreshLogs();
-    }, []);
+    }, [user?.id]);
 
-    const refreshLogs = () => {
-        const allLogs = LocalDatabase.getTimeLogs();
-        setLogs(allLogs);
+    const refreshLogs = async () => {
+        try {
+            // If admin/manager, maybe fetch all logs? For now let's just fetch everything and filter in client or improve API
+            // The API getLogs supports userId filter.
+            // If ROLE is ADMIN, fetch ALL? Or just fetch all and filter locally?
+            // Let's fetch all for simplicity if Admin, or just mine if Therapist.
+            // Actually, the previous code fetched ALL logs from LocalDatabase via getLogs()
 
-        // Check if user is currently working (last log has In but no Out)
-        // Filter for current user logs, sorted by date desc
-        const myLogs = allLogs.filter(l => l.userId === user?.id).sort((a, b) => b.clockIn - a.clockIn);
-        if (myLogs.length > 0) {
-            const lastLog = myLogs[0];
-            if (!lastLog.clockOut && lastLog.type !== 'MANUAL') { // Only count manual as working if approved/regular?? Usually manual is past. 
-                // Actually simple logic: if last REGULAR log has no clockOut, they are working.
-                if (lastLog.type === 'REGULAR') {
-                    setIsWorking(true);
-                    setCurrentSessionStart(lastLog.clockIn);
+            const fetchedLogs = await ApiService.getTimeLogs(); // Fetch all
+            setLogs(fetchedLogs || []);
+
+            // Check if user is currently working (last log has In but no Out)
+            // Filter for current user logs, sorted by date desc
+            const myLogs = (fetchedLogs || []).filter((l: TimeLog) => l.userId === user?.id).sort((a: any, b: any) => b.clockIn - a.clockIn);
+            if (myLogs.length > 0) {
+                const lastLog = myLogs[0];
+                if (!lastLog.clockOut && lastLog.type !== 'MANUAL') {
+                    if (lastLog.type === 'REGULAR') {
+                        setIsWorking(true);
+                        setCurrentSessionStart(lastLog.clockIn);
+                    }
+                } else {
+                    setIsWorking(false);
+                    setCurrentSessionStart(null);
                 }
-            } else {
-                setIsWorking(false);
-                setCurrentSessionStart(null);
             }
+        } catch (error) {
+            console.error("Failed to load time logs:", error);
         }
     };
 
@@ -76,40 +85,38 @@ export const TimeClock: React.FC = () => {
     };
 
     // Step 2: User confirmed, execute logic
-    const finalizeToggleClock = () => {
+    const finalizeToggleClock = async () => {
         if (!actionTime) return;
 
         const exactTime = Date.now();
         const today = new Date().toISOString().split('T')[0];
 
-        if (confirmAction === 'IN') {
-            const newLog: TimeLog = {
-                id: `tl-${exactTime}`,
-                userId: user?.id || 'u-1',
-                date: today,
-                clockIn: exactTime,
-                type: 'REGULAR',
-                status: 'APPROVED',
-                relatedSessionStart: exactTime + (1000 * 60 * 15)
-            };
-            // LOGIC: Save to DB
-            LocalDatabase.addTimeLog(newLog);
+        try {
+            if (confirmAction === 'IN') {
+                const newLog: TimeLog = {
+                    id: `tl-${exactTime}`,
+                    userId: user?.id || 'u-1',
+                    date: today,
+                    clockIn: exactTime,
+                    type: 'REGULAR',
+                    status: 'APPROVED',
+                    relatedSessionStart: exactTime + (1000 * 60 * 15)
+                };
+                // LOGIC: Save to API
+                await ApiService.createTimeLog(newLog);
+                await refreshLogs();
 
-            // Update Local State
-            refreshLogs();
-
-        } else if (confirmAction === 'OUT') {
-            // Find the active log (latest one without clockOut)
-            // Since we refreshLogs, logs state should be up to date.
-            // But let's find it in the DB to be safe or iterate logs.
-            // Better to find the ID of the open log.
-            const myLogs = logs.filter(l => l.userId === user?.id && !l.clockOut && l.type === 'REGULAR');
-            if (myLogs.length > 0) {
-                const activeLog = myLogs[0]; // Should be the most recent one due to logic
-                LocalDatabase.updateTimeLog(activeLog.id, { clockOut: exactTime });
+            } else if (confirmAction === 'OUT') {
+                const myLogs = logs.filter(l => l.userId === user?.id && !l.clockOut && l.type === 'REGULAR');
+                if (myLogs.length > 0) {
+                    const activeLog = myLogs[0];
+                    await ApiService.updateTimeLog(activeLog.id, { clockOut: exactTime });
+                }
+                await refreshLogs();
             }
-
-            refreshLogs();
+        } catch (error) {
+            console.error("Error updating time log:", error);
+            alert("Erro ao salvar ponto. Tente novamente.");
         }
 
         setConfirmAction(null);
@@ -117,7 +124,7 @@ export const TimeClock: React.FC = () => {
     };
 
     // Save Manual Entry
-    const handleSaveManual = () => {
+    const handleSaveManual = async () => {
         if (!manualDate || !manualTimeIn || !justification) return;
 
         const start = new Date(`${manualDate}T${manualTimeIn}`).getTime();
@@ -136,22 +143,30 @@ export const TimeClock: React.FC = () => {
             photoUrl: hasPhoto ? 'mock-url-photo.jpg' : undefined
         };
 
-        LocalDatabase.addTimeLog(newLog);
-        refreshLogs();
+        try {
+            await ApiService.createTimeLog(newLog);
+            await refreshLogs();
 
-        setShowManualModal(false);
-
-        setManualDate('');
-        setManualTimeIn('');
-        setManualTimeOut('');
-        setJustification('');
-        setHasPhoto(false);
-        alert("Solicitação enviada para aprovação do administrador.");
+            setShowManualModal(false);
+            setManualDate('');
+            setManualTimeIn('');
+            setManualTimeOut('');
+            setJustification('');
+            setHasPhoto(false);
+            alert("Solicitação enviada para aprovação do administrador.");
+        } catch (error) {
+            console.error("Error saving manual log:", error);
+            alert("Erro ao salvar solicitação.");
+        }
     };
 
-    const handleApprove = (logId: string) => {
-        LocalDatabase.updateTimeLog(logId, { status: 'APPROVED' });
-        refreshLogs();
+    const handleApprove = async (logId: string) => {
+        try {
+            await ApiService.updateTimeLog(logId, { status: 'APPROVED' });
+            await refreshLogs();
+        } catch (error) {
+            console.error("Error approving log:", error);
+        }
     };
 
     // Open Rejection Modal
@@ -161,17 +176,21 @@ export const TimeClock: React.FC = () => {
     };
 
     // Confirm Rejection
-    const confirmRejection = () => {
+    const confirmRejection = async () => {
         if (!rejectingLogId || !rejectionReason.trim()) return;
 
-        LocalDatabase.updateTimeLog(rejectingLogId, {
-            status: 'REJECTED',
-            rejectionReason: rejectionReason
-        });
-        refreshLogs();
+        try {
+            await ApiService.updateTimeLog(rejectingLogId, {
+                status: 'REJECTED',
+                rejectionReason: rejectionReason
+            });
+            await refreshLogs();
 
-        setRejectingLogId(null);
-        setRejectionReason('');
+            setRejectingLogId(null);
+            setRejectionReason('');
+        } catch (error) {
+            console.error("Error rejecting log:", error);
+        }
     };
 
     const calculateGap = (log: TimeLog) => {
@@ -298,8 +317,8 @@ export const TimeClock: React.FC = () => {
                         <button
                             onClick={requestToggleClock}
                             className={`w-full max-w-sm py-5 rounded-xl text-xl font-bold flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-md ${isWorking
-                                    ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200'
-                                    : 'bg-green-600 hover:bg-green-700 text-white shadow-green-200'
+                                ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-200'
+                                : 'bg-green-600 hover:bg-green-700 text-white shadow-green-200'
                                 }`}
                         >
                             {isWorking ? (
@@ -331,8 +350,8 @@ export const TimeClock: React.FC = () => {
                                                     {log.type === 'MANUAL' ? 'Registro Manual' : 'Ponto Regular'}
                                                 </p>
                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${log.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                                                        log.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                                                            'bg-red-100 text-red-700'
+                                                    log.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-red-100 text-red-700'
                                                     }`}>
                                                     {log.status === 'APPROVED' ? 'Aprovado' : log.status === 'PENDING' ? 'Pendente' : 'Recusado'}
                                                 </span>
@@ -457,8 +476,8 @@ export const TimeClock: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-1 rounded text-xs font-bold ${log.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                                                            log.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                                                                'bg-yellow-100 text-yellow-700'
+                                                        log.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                            'bg-yellow-100 text-yellow-700'
                                                         }`}>
                                                         {log.status === 'APPROVED' ? 'OK' : log.status === 'REJECTED' ? 'Recusado' : 'Pendente'}
                                                     </span>

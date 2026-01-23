@@ -5,7 +5,7 @@ import { DollarSign, Download, Calendar, Filter, FileText, TrendingUp, Users, Ed
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
-import { LocalDatabase } from '../services/LocalDatabase';
+import * as ApiService from '../services/ApiService'; // Use API
 import { useData } from '../contexts/DataContext';
 
 export const Financial: React.FC = () => {
@@ -44,9 +44,17 @@ export const Financial: React.FC = () => {
         refreshData();
     }, []);
 
-    const refreshData = () => {
-        setTransactions(LocalDatabase.getFinancialTransactions().length > 0 ? LocalDatabase.getFinancialTransactions() : MOCK_EXPENSES);
-        setServices(LocalDatabase.getFinancialServices().length > 0 ? LocalDatabase.getFinancialServices() : MOCK_FINANCIAL_SERVICES);
+    const refreshData = async () => {
+        try {
+            const [fetchedTrans, fetchedServices] = await Promise.all([
+                ApiService.getTransactions(),
+                ApiService.getFinancialServices()
+            ]);
+            setTransactions(fetchedTrans || []);
+            setServices(fetchedServices || []);
+        } catch (error) {
+            console.error("Failed to load financial data:", error);
+        }
     };
 
     const therapists = users.filter(u => u.role === 'THERAPIST' || u.role === 'SPECIALIST');
@@ -154,7 +162,7 @@ export const Financial: React.FC = () => {
 
     // --- HANDLERS ---
 
-    const handleSaveTransaction = () => {
+    const handleSaveTransaction = async () => {
         if (!newTransaction.description || !newTransaction.amount) return;
 
         const trans: FinancialTransaction = {
@@ -170,22 +178,28 @@ export const Financial: React.FC = () => {
             costCenter: newTransaction.costCenter
         };
 
-        LocalDatabase.addFinancialTransaction(trans);
-        refreshData();
+        try {
+            await ApiService.createTransaction(trans);
+            await refreshData();
 
-        setIsExpenseModalOpen(false);
-        // Reset
-        setNewTransaction({
-            type: 'EXPENSE',
-            category: 'EXPENSE_OTHER',
-            status: 'PENDING',
-            paymentMethod: 'PIX',
-            date: new Date().toISOString().split('T')[0],
-            costCenter: 'Geral'
-        });
+            setIsExpenseModalOpen(false);
+            // Reset
+            setNewTransaction({
+                type: 'EXPENSE',
+                category: 'EXPENSE_OTHER',
+                status: 'PENDING',
+                paymentMethod: 'PIX',
+                date: new Date().toISOString().split('T')[0],
+                costCenter: 'Geral'
+            });
+            alert('Lançamento salvo com sucesso!');
+        } catch (error) {
+            console.error("Error saving transaction:", error);
+            alert("Erro ao salvar lançamento financeiro.");
+        }
     };
 
-    const handleSaveService = () => {
+    const handleSaveService = async () => {
         if (!newService.name || !newService.defaultPrice) return;
         const srv: FinancialService = {
             id: `fs-new-${Date.now()}`,
@@ -195,11 +209,17 @@ export const Financial: React.FC = () => {
             description: newService.description
         };
 
-        LocalDatabase.addFinancialService(srv);
-        refreshData();
+        try {
+            await ApiService.createFinancialService(srv);
+            await refreshData();
 
-        setIsServiceModalOpen(false);
-        setNewService({ name: '', defaultPrice: 0, category: 'REVENUE_SESSION' });
+            setIsServiceModalOpen(false);
+            setNewService({ name: '', defaultPrice: 0, category: 'REVENUE_SESSION' });
+            alert('Serviço cadastrado com sucesso!');
+        } catch (error) {
+            console.error("Error saving service:", error);
+            alert("Erro ao salvar serviço.");
+        }
     };
 
     const selectServiceForTransaction = (srv: FinancialService) => {

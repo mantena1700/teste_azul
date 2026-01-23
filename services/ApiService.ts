@@ -170,7 +170,61 @@ export async function createTransaction(transaction: any): Promise<{ success: bo
     });
 }
 
+export async function updateTransaction(id: string, updates: any): Promise<{ success: boolean }> {
+    return apiCall(`/transactions/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+    });
+}
+
+export async function deleteTransaction(id: string): Promise<{ success: boolean }> {
+    return apiCall(`/transactions/${id}`, {
+        method: 'DELETE'
+    });
+}
+
+// ==================== FINANCIAL SERVICES (CATALOG) ====================
+export async function getFinancialServices(clinicId?: string): Promise<any[]> {
+    const query = clinicId ? `?clinicId=${clinicId}` : '';
+    return apiCall(`/financial-services${query}`);
+}
+
+export async function createFinancialService(service: any): Promise<{ success: boolean; service: any }> {
+    return apiCall('/financial-services', {
+        method: 'POST',
+        body: JSON.stringify(service)
+    });
+}
+
+export async function updateFinancialService(id: string, updates: any): Promise<{ success: boolean }> {
+    return apiCall(`/financial-services/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+    });
+}
+
+
 // ==================== HEALTH CHECK ====================
 export async function healthCheck(): Promise<{ status: string; timestamp: string }> {
     return apiCall('/health');
+}
+
+// ==================== TIME LOGS (PONTO) ====================
+export async function getTimeLogs(userId?: string): Promise<any[]> {
+    const query = userId ? `?userId=${userId}` : '';
+    return apiCall(`/timelogs${query}`);
+}
+
+export async function createTimeLog(log: any): Promise<{ success: boolean; log: any }> {
+    return apiCall('/timelogs', {
+        method: 'POST',
+        body: JSON.stringify(log)
+    });
+}
+
+export async function updateTimeLog(id: string, updates: any): Promise<{ success: boolean }> {
+    return apiCall(`/timelogs/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates)
+    });
 }

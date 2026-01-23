@@ -228,6 +228,35 @@ export const TeamManagement: React.FC = () => {
         });
     };
 
+    const handleDeleteUser = async () => {
+        if (!selectedUser) return;
+        if (!confirm(`Tem certeza que deseja excluir o colaborador "${selectedUser.name}"? Esta ação removerá o acesso dele ao sistema.`)) return;
+
+        try {
+            // Assuming ApiService is available globally or imported. 
+            // Since we see 'fetch' being used directly in handleAddUser, let's stick to fetch for consistency OR use the ApiService pattern if imported.
+            // But wait, in previous steps I removed LocalDatabase. Let's look at imports.
+            // Oh, I see 'useData' is used. I should check if 'deleteUser' is exposed in 'useData' or if I should import ApiService directly.
+            // Let's import the raw fetch for now to match handleAddUser style or better yet, use the DELETE api endpoint.
+
+            const response = await fetch(`/api/users/${selectedUser.id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert('Usuário removido com sucesso!');
+                setSelectedUser(null);
+                window.location.reload(); // Simple refresh to sync state
+            } else {
+                const err = await response.json();
+                alert(`Erro ao excluir: ${err.message || 'Erro desconhecido'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert('Erro de conexão ao excluir usuário.');
+        }
+    };
+
     return (
         <div className="space-y-6 pb-20 md:pb-0">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -300,6 +329,13 @@ export const TeamManagement: React.FC = () => {
                                             </p>
                                         </div>
                                         <div className="flex gap-2">
+                                            <button
+                                                onClick={handleDeleteUser}
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Excluir Colaborador"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
                                             <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Enviar Email"><Mail className="w-5 h-5" /></button>
                                             <button className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Ligar"><Phone className="w-5 h-5" /></button>
                                         </div>
