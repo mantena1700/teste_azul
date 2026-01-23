@@ -8,13 +8,30 @@ services:
       dockerfile: Dockerfile
     container_name: dom-azul-frontend
     restart: unless-stopped
-    ports:
-      - "80:80" # Standard web port
+    # Ports removed, access via Caddy
     environment:
       - NODE_ENV=production
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - dom-azul-net
+
+  # Caddy Reverse Proxy (HTTPS)
+  caddy:
+    image: caddy:2-alpine
+    container_name: dom-azul-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
     networks:
       - dom-azul-net
 
@@ -49,5 +66,9 @@ networks:
   dom-azul-net:
     driver: bridge
 
-# Note: PostgreSQL runs directly on the host (not in Docker)
-# This allows persistent data and easier management
+volumes:
+  caddy_data:
+  caddy_config:
+
+    # Note: PostgreSQL runs directly on the host (not in Docker)
+    # This allows persistent data and easier management

@@ -1,0 +1,3 @@
+domazul.domseven.com.br {
+    reverse_proxy frontend:80
+}
