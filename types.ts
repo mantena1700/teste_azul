@@ -175,7 +175,7 @@ export interface DocumentFile {
   category: 'LAUDO' | 'PEI' | 'VIDEO_MODELING';
 }
 
-export type PaymentMethod = 'PRIVATE' | 'INSURANCE' | 'MIXED';
+export type PaymentMethod = 'PRIVATE' | 'INSURANCE' | 'MONTHLY_PLAN' | 'OTHER';
 
 export interface ServiceItem {
   id: string;
@@ -189,6 +189,7 @@ export interface ContractConfig {
   insuranceName?: string;
   insuranceNumber?: string;
   monthlyCap?: number;
+  otherPaymentDetail?: string;
   services: ServiceItem[];
 }
 

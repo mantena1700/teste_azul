@@ -214,9 +214,13 @@ export const PatientsList: React.FC = () => {
                                         {patient.guardianNames?.join(', ') || (patient.guardians as any)?.join(', ') || 'Sem registros'}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded text-xs font-bold ${patient.financialConfig?.paymentMethod === 'PRIVATE' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${newPatient.financialConfig?.paymentMethod === 'PRIVATE' ? 'bg-green-100 text-green-700' :
+                                            newPatient.financialConfig?.paymentMethod === 'INSURANCE' ? 'bg-purple-100 text-purple-700' :
+                                                'bg-blue-100 text-blue-700'
                                             }`}>
-                                            {patient.financialConfig?.paymentMethod === 'PRIVATE' ? 'Particular' : 'Convênio'}
+                                            {newPatient.financialConfig?.paymentMethod === 'PRIVATE' ? 'Particular' :
+                                                newPatient.financialConfig?.paymentMethod === 'INSURANCE' ? 'Convênio' :
+                                                    newPatient.financialConfig?.paymentMethod === 'MONTHLY_PLAN' ? 'Mensal' : 'Outro'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
