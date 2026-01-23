@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { MOCK_FINANCIAL_SERVICES } from '../constants';
 import { User, ContractType, Patient, ScheduleItem, ServiceItem, Clinic } from '../types';
 import { Users, Clock, Calendar, DollarSign, Plus, Save, X, Search, Briefcase, FileText, CheckSquare, Settings, UserPlus, ChevronRight, Phone, Mail, MapPin, Star, Trash2 } from 'lucide-react';
-import { LocalDatabase } from '../services/LocalDatabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 
@@ -34,11 +33,15 @@ export const TeamManagement: React.FC = () => {
     // Load clinics for SAAS_ADMIN
     React.useEffect(() => {
         if (currentUser?.role === 'SAAS_ADMIN') {
-            const allClinics = LocalDatabase.getClinics();
-            setClinics(allClinics.map(c => ({ id: c.id, name: c.name })));
-            if (allClinics.length > 0 && !selectedClinicId) {
-                setSelectedClinicId(allClinics[0].id);
-            }
+            fetch('/api/clinics')
+                .then(res => res.json())
+                .then(data => {
+                    setClinics(data.map((c: any) => ({ id: c.id, name: c.name })));
+                    if (data.length > 0 && !selectedClinicId) {
+                        setSelectedClinicId(data[0].id);
+                    }
+                })
+                .catch(err => console.error('Error loading clinics:', err));
         }
     }, [currentUser?.role]);
 
