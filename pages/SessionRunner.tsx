@@ -9,6 +9,7 @@ export const SessionRunner: React.FC = () => {
     // Session Phases: SETUP (Antecedents) -> PAIRING (Play) -> RUNNING (Data) -> REVIEW
     const [phase, setPhase] = useState<'SETUP' | 'PAIRING' | 'RUNNING' | 'REVIEW'>('SETUP');
     const { addSession, activities, patients } = useData();
+    const { user } = useAuth(); // Import user context
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -312,7 +313,7 @@ export const SessionRunner: React.FC = () => {
         const sessionData: Session = {
             id: 'sess-' + Date.now(),
             patientId: selectedPatient.id,
-            therapistId: 'u-1',
+            therapistId: user?.id || 'u-1',
             startTime: Date.now() - (elapsedTime * 1000),
             endTime: Date.now(),
             trials: trials,
@@ -320,7 +321,9 @@ export const SessionRunner: React.FC = () => {
             notes: sessionNotes,
             sentiment: 'NEUTRAL', // Should make this selectable in a future polished modal
             reinforcer: currentReinforcer,
-            antecedentStrategies: antecedents
+            antecedentStrategies: antecedents,
+            // @ts-ignore
+            clinicId: user?.clinicId
         };
 
         addSession(sessionData); // Use Context to save and update appointments
@@ -506,12 +509,12 @@ export const SessionRunner: React.FC = () => {
                                                 prev.includes(strat) ? prev.filter(p => p !== strat) : [...prev, strat]
                                             );
                                         }}
-                                        className={`px-4 py-2 rounded-full text-xs font-bold transition-colors border ${antecedents.includes(strat)
+                                        className={`px-4 py-2 rounded-full text-xs font-bold transition-colors border ${antecedents?.includes(strat)
                                             ? 'bg-green-100 border-green-200 text-green-700'
                                             : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
                                             }`}
                                     >
-                                        {antecedents.includes(strat) && <CheckCircle className="w-3 h-3 inline mr-1" />}
+                                        {antecedents?.includes(strat) && <CheckCircle className="w-3 h-3 inline mr-1" />}
                                         {strat}
                                     </button>
                                 ))}

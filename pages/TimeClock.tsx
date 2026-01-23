@@ -100,7 +100,9 @@ export const TimeClock: React.FC = () => {
                     clockIn: exactTime,
                     type: 'REGULAR',
                     status: 'APPROVED',
-                    relatedSessionStart: exactTime + (1000 * 60 * 15)
+                    relatedSessionStart: exactTime + (1000 * 60 * 15),
+                    // @ts-ignore
+                    clinicId: user?.clinicId
                 };
                 // LOGIC: Save to API
                 await ApiService.createTimeLog(newLog);
@@ -128,8 +130,11 @@ export const TimeClock: React.FC = () => {
                             entityId: user.id,
                             entityName: user.name,
                             paymentMethod: 'TRANSFER',
+                            paymentMethod: 'TRANSFER',
                             isSystemGenerated: true,
-                            costCenter: 'RH'
+                            costCenter: 'RH',
+                            // @ts-ignore
+                            clinicId: user?.clinicId
                         });
                     }
                 }
@@ -161,7 +166,9 @@ export const TimeClock: React.FC = () => {
             status: 'PENDING',
             justification: justification,
             relatedSessionStart: start + (1000 * 60 * 10),
-            photoUrl: hasPhoto ? 'mock-url-photo.jpg' : undefined
+            photoUrl: hasPhoto ? 'mock-url-photo.jpg' : undefined,
+            // @ts-ignore
+            clinicId: user?.clinicId
         };
 
         try {
