@@ -1,5 +1,7 @@
 #!/bin/bash
 echo "🚀 Iniciando Deploy do DOM Azul..."
+set -e # Para o script se houver erro
+
 
 echo "⬇️ Baixando atualizações..."
 git pull origin main

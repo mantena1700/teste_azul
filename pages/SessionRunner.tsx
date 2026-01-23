@@ -310,10 +310,19 @@ export const SessionRunner: React.FC = () => {
         if (!selectedPatient) return;
         setIsActive(false);
 
+        // Ensure we have a valid user and clinicId, or handle gracefully if offline/mocked
+        const therapistId = user?.id || 'u-unknown';
+        const clinicId = user?.clinicId;
+
+        if (!clinicId) {
+            console.warn("⚠️ Warning: Saving session without clinicId. This might cause visibility issues in production.");
+        }
+
         const sessionData: Session = {
             id: 'sess-' + Date.now(),
             patientId: selectedPatient.id,
-            therapistId: user?.id || 'u-1',
+            therapistId: therapistId,
+            clinicId: clinicId, // Pass explicitly
             startTime: Date.now() - (elapsedTime * 1000),
             endTime: Date.now(),
             trials: trials,
@@ -322,28 +331,30 @@ export const SessionRunner: React.FC = () => {
             sentiment: 'NEUTRAL', // Should make this selectable in a future polished modal
             reinforcer: currentReinforcer,
             antecedentStrategies: antecedents,
-            // @ts-ignore
-            clinicId: user?.clinicId
         };
 
-        addSession(sessionData); // Use Context to save and update appointments
+        try {
+            await addSession(sessionData); // Use Context to save and update appointments
+            setSessionSaved(true);
 
-        setSessionSaved(true);
-
-        setTimeout(() => {
-            setMobileView('list');
-            setPhase('SETUP');
-            setSessionSaved(false);
-            setTrials([]);
-            setSessionEvents([]);
-            setElapsedTime(0);
-            setSessionNotes('');
-            setAntecedents([]);
-            setCurrentReinforcer('');
-            resetTokens();
-            setMandCount(0);
-            navigate('/dashboard'); // Go back to dashboard after finish
-        }, 1500);
+            setTimeout(() => {
+                setMobileView('list');
+                setPhase('SETUP');
+                setSessionSaved(false);
+                setTrials([]);
+                setSessionEvents([]);
+                setElapsedTime(0);
+                setSessionNotes('');
+                setAntecedents([]);
+                setCurrentReinforcer('');
+                resetTokens();
+                setMandCount(0);
+                navigate('/dashboard'); // Go back to dashboard after finish
+            }, 1500);
+        } catch (error) {
+            console.error("❌ Error saving session:", error);
+            alert("Erro ao salvar sessão. Tente novamente ou verifique sua conexão.");
+        }
     };
 
     // --- SUB-COMPONENTS ---

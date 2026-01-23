@@ -113,6 +113,7 @@ export interface Trial {
 
 export interface Session {
   id: string;
+  clinicId?: string;
   patientId: string;
   therapistId: string;
   startTime: number;
@@ -209,8 +210,10 @@ export interface Guardian {
 
 export interface Patient {
   id: string;
+  clinicId?: string;
   name: string;
-  age: number;
+  birthDate?: string; // YYYY-MM-DD for accurate age calc
+  age: number; // Keep for fallback/legacy
   diagnosis: string;
   startDate: string;
   guardians: string[];

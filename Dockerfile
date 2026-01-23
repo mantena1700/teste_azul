@@ -7,7 +7,10 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+# Install dependencies with legacy peer deps to avoid conflicts options and increase memory limit
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+RUN npm install --legacy-peer-deps
+
 
 # Copy source code
 COPY . .

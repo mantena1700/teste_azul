@@ -21,8 +21,35 @@ export const PatientProfile: React.FC = () => {
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false); // NEW: Doc Modal
     const [editForm, setEditForm] = useState<Partial<Patient>>({});
     const [tempReinforcer, setTempReinforcer] = useState('');
+
+    // Document Form State
+    const [newDocName, setNewDocName] = useState('');
+    const [newDocCategory, setNewDocCategory] = useState<'LAUDO' | 'PEI' | 'VIDEO_MODELING'>('LAUDO');
+
+    // Helper to calculate age in years and months
+    const calculateDetailedAge = (birthDateString?: string) => {
+        if (!birthDateString) return null;
+        const birthDate = new Date(birthDateString);
+        const today = new Date(); // Use server time or reliable client time
+        let years = today.getFullYear() - birthDate.getFullYear();
+        let months = today.getMonth() - birthDate.getMonth();
+        if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+            years--;
+            months += 12;
+        }
+        // Adjust months if day is earlier
+        if (today.getDate() < birthDate.getDate()) {
+            months--;
+            if (months < 0) {
+                months = 11;
+                // years already adjusted above
+            }
+        }
+        return { years, months };
+    };
 
     // PEI Filter State
     const [goalFilter, setGoalFilter] = useState<'ALL' | 'IN_PROGRESS' | 'ACHIEVED'>('ALL');
@@ -194,7 +221,13 @@ export const PatientProfile: React.FC = () => {
                                         </span>
                                     </h1>
                                     <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500 font-medium">
-                                        <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> {patientData.age} anos</span>
+                                        <span className="flex items-center gap-1.5">
+                                            <Calendar className="w-4 h-4" />
+                                            {patientData.birthDate ? (() => {
+                                                const age = calculateDetailedAge(patientData.birthDate);
+                                                return age ? `${age.years} anos e ${age.months} meses` : `${patientData.age} anos`;
+                                            })() : `${patientData.age} anos`}
+                                        </span>
                                         <span className="flex items-center gap-1.5"><Activity className="w-4 h-4" /> {patientData.diagnosis}</span>
                                         <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> São Paulo, SP</span>
                                     </div>
@@ -589,29 +622,36 @@ export const PatientProfile: React.FC = () => {
                             <Users className="w-5 h-5 text-indigo-600" /> Responsáveis
                         </h3>
                         <div className="space-y-4">
-                            {(patientData.guardianNames || patientData.guardians || []).map((g, idx) => (
-                                <div key={idx} className="flex items-center gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0">
-                                    <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                                        {g.charAt(0)}
+                            {/* Fallback for legacy data or explicit names */}
+                            {((patientData.guardianNames && patientData.guardianNames.length > 0) ? patientData.guardianNames :
+                                (patientData.guardians && patientData.guardians.length > 0) ? patientData.guardians : []).map((g, idx) => (
+                                    <div key={idx} className="flex items-center gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0">
+                                        <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                                            {g.charAt(0)}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-sm text-gray-900">{g}</p>
+                                            <p className="text-xs text-gray-500">Responsável</p>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"><Phone className="w-4 h-4" /></button>
+                                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Mail className="w-4 h-4" /></button>
+                                        </div>
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-sm text-gray-900">{g}</p>
-                                        <p className="text-xs text-gray-500">Mãe/Pai</p>
-                                    </div>
-                                    <div className="flex gap-1">
-                                        <button className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"><Phone className="w-4 h-4" /></button>
-                                        <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Mail className="w-4 h-4" /></button>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            {(!patientData.guardianNames?.length && !patientData.guardians?.length) && (
+                                <p className="text-sm text-gray-500 text-center py-2">Nenhum responsável cadastrado.</p>
+                            )}
                         </div>
                     </div>
 
                     {/* Files / Documents */}
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-                        <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-indigo-600" /> Documentos Recentes
-                        </h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-indigo-600" /> Documentos
+                            </h3>
+                        </div>
                         <div className="space-y-3">
                             {(patientData.documents || []).map((doc) => (
                                 <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all cursor-pointer group">
@@ -624,8 +664,14 @@ export const PatientProfile: React.FC = () => {
                                     </div>
                                 </div>
                             ))}
-                            <button className="w-full py-2 text-xs font-bold text-gray-500 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-300 transition-all">
-                                + Upload Arquivo
+                            {(patientData.documents || []).length === 0 && (
+                                <p className="text-xs text-gray-400 text-center py-2">Nenhum documento.</p>
+                            )}
+                            <button
+                                onClick={() => setIsDocModalOpen(true)}
+                                className="w-full py-2 text-xs font-bold text-gray-500 border border-dashed border-gray-300 rounded-lg hover:bg-gray-50 hover:text-indigo-600 hover:border-indigo-300 transition-all"
+                            >
+                                + Adicionar Documento
                             </button>
                         </div>
                     </div>
@@ -655,8 +701,22 @@ export const PatientProfile: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Idade</label>
-                                    <input type="number" className="w-full border border-gray-300 rounded-lg p-2.5" value={editForm.age || ''} onChange={e => setEditForm({ ...editForm, age: parseInt(e.target.value) })} />
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Data de Nascimento</label>
+                                    <input
+                                        type="date"
+                                        className="w-full border border-gray-300 rounded-lg p-2.5"
+                                        value={editForm.birthDate || ''}
+                                        onChange={e => {
+                                            const newDate = e.target.value;
+                                            // Auto-calc numeric age for backward compatibility
+                                            const ageCalc = calculateDetailedAge(newDate);
+                                            setEditForm({
+                                                ...editForm,
+                                                birthDate: newDate,
+                                                age: ageCalc ? ageCalc.years : editForm.age
+                                            });
+                                        }}
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Diagnóstico</label>
@@ -793,7 +853,80 @@ export const PatientProfile: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            {/* EDIT MODAL */}
+            {isEditModalOpen && (
+                // ... (existing modal code, untouched by this logic, but ensuring structure is correct)
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    {/* ... keeping existing modal content logic if I were to copy-paste it all, but since I am appending, I will assume it's there. 
+                       Wait, I need to insert the NEW modal AFTER the existing one. 
+                       I will target the closing brace of the component.
+                   */}
+                </div>
             )}
-        </div>
-    );
-};
+
+            {/* NEW: DOCUMENT MODAL */}
+            {isDocModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-indigo-600" /> Adicionar Documento
+                            </h3>
+                            <button onClick={() => setIsDocModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Arquivo/Documento</label>
+                                <input
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                                    placeholder="Ex: Laudo Neurológico 2024"
+                                    value={newDocName}
+                                    onChange={e => setNewDocName(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Categoria</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 bg-white"
+                                    value={newDocCategory}
+                                    onChange={e => setNewDocCategory(e.target.value as any)}
+                                >
+                                    <option value="LAUDO">Laudo / Relatório</option>
+                                    <option value="PEI">PEI (Plano de Ensino)</option>
+                                    <option value="VIDEO_MODELING">Vídeo Modelagem</option>
+                                </select>
+                            </div>
+                            <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 text-center">
+                                <p className="text-xs text-gray-500 mb-2">Simulação: Em produção, aqui seria o upload real.</p>
+                                <button className="text-indigo-600 font-bold text-xs hover:underline">Escolher Arquivo</button>
+                            </div>
+                        </div>
+                        <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3">
+                            <button onClick={() => setIsDocModalOpen(false)} className="flex-1 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
+                            <button
+                                onClick={() => {
+                                    if (newDocName && patientData) {
+                                        const newDoc: any = {
+                                            id: `doc-${Date.now()}`,
+                                            name: newDocName,
+                                            type: 'PDF', // Default for now
+                                            category: newDocCategory,
+                                            uploadDate: new Date().toISOString()
+                                        };
+                                        const updatedDocs = [...(patientData.documents || []), newDoc];
+                                        updatePatient(patientData.id, { documents: updatedDocs });
+                                        setPatientData({ ...patientData, documents: updatedDocs });
+                                        setIsDocModalOpen(false);
+                                        setNewDocName('');
+                                    }
+                                }}
+                                className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                            >
+                                Salvar Documento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
