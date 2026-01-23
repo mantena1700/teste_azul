@@ -391,35 +391,38 @@ export const SaaSAdmin: React.FC = () => {
         <div className="min-h-screen bg-gray-50/50 pb-20 md:pb-0">
 
             {/* === TOP BAR === */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-20 px-6 py-4 flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-4">
-                    <div className="bg-indigo-600 p-2 rounded-lg">
+            {/* === TOP BAR === */}
+            <div className="bg-white border-b border-gray-200 sticky top-0 z-20 px-4 py-4 md:px-6 flex flex-col md:flex-row items-center justify-between shadow-sm gap-4">
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="bg-indigo-600 p-2 rounded-lg shrink-0">
                         <ShieldCheck className="w-6 h-6 text-white" />
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-gray-900 leading-none">Painel Master SaaS</h1>
-                        <p className="text-xs text-gray-500 mt-1">Administração Multi-Inquilino</p>
+                        <p className="text-xs text-gray-500 mt-1">Administração Multi-Inquílino</p>
                     </div>
                 </div>
 
-                <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
-                    {[
-                        { id: 'DASHBOARD', label: 'Visão Geral', icon: Activity },
-                        { id: 'CLINICS', label: 'Clínicas (Tenants)', icon: Building2 },
-                        { id: 'USERS', label: 'Usuários', icon: Users },
-                        { id: 'PLANS', label: 'Planos & Config', icon: Layers },
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveView(tab.id as any)}
-                            className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${activeView === tab.id
-                                ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-black/5'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
-                                }`}
-                        >
-                            <tab.icon className="w-4 h-4" /> {tab.label}
-                        </button>
-                    ))}
+                <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200 w-full md:w-auto overflow-x-auto no-scrollbar">
+                    <div className="flex w-full md:w-auto min-w-max">
+                        {[
+                            { id: 'DASHBOARD', label: 'Visão Geral', icon: Activity },
+                            { id: 'CLINICS', label: 'Clínicas (Tenants)', icon: Building2 },
+                            { id: 'USERS', label: 'Usuários', icon: Users },
+                            { id: 'PLANS', label: 'Planos & Config', icon: Layers },
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveView(tab.id as any)}
+                                className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all whitespace-nowrap flex-1 md:flex-none justify-center ${activeView === tab.id
+                                    ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-black/5'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                                    }`}
+                            >
+                                <tab.icon className="w-4 h-4 shrink-0" /> {tab.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -542,8 +545,8 @@ export const SaaSAdmin: React.FC = () => {
                         </div>
 
                         {/* Clinics Grid/Table */}
-                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                            <table className="w-full text-left">
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden overflow-x-auto">
+                            <table className="w-full text-left min-w-[800px]">
                                 <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 text-xs uppercase font-bold tracking-wider">
                                     <tr>
                                         <th className="px-6 py-4">Empresa / Tenant</th>
@@ -598,7 +601,7 @@ export const SaaSAdmin: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
                                                             onClick={() => openEditClinicModal(clinic)}
                                                             className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar"
