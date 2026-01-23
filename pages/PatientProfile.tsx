@@ -34,7 +34,7 @@ export const PatientProfile: React.FC = () => {
             if (found) {
                 setPatientData(found);
                 setEditForm(found);
-                const activePlan = found.plans.find(p => p.status === 'ACTIVE');
+                const activePlan = (found.plans || []).find(p => p.status === 'ACTIVE');
                 if (activePlan) setExpandedPlanId(activePlan.id);
             } else {
                 navigate('/patients');
@@ -61,7 +61,7 @@ export const PatientProfile: React.FC = () => {
         }, 0);
 
         // 2. Goals Logic
-        const activePlan = patientData.plans.find(p => p.status === 'ACTIVE');
+        const activePlan = (patientData.plans || []).find(p => p.status === 'ACTIVE');
         const totalGoals = activePlan?.goals.length || 0;
         const goalsMastered = activePlan?.goals.filter(g => g.status === 'ACHIEVED').length || 0;
 
@@ -98,7 +98,7 @@ export const PatientProfile: React.FC = () => {
     const toggleGoalStatus = (planId: string, goalId: string, currentStatus: string) => {
         const nextStatus = currentStatus === 'ACHIEVED' ? 'IN_PROGRESS' : 'ACHIEVED';
 
-        const updatedPlans = patientData?.plans.map(p => {
+        const updatedPlans = (patientData?.plans || []).map(p => {
             if (p.id === planId) {
                 return {
                     ...p,
@@ -365,7 +365,7 @@ export const PatientProfile: React.FC = () => {
 
                             {/* Plans Accordion */}
                             <div className="space-y-4">
-                                {patientData.plans.map(plan => (
+                                {(patientData.plans || []).map(plan => (
                                     <div key={plan.id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md">
                                         <div
                                             className="p-5 flex items-center justify-between cursor-pointer bg-white"
@@ -457,7 +457,7 @@ export const PatientProfile: React.FC = () => {
 
                             <div className="space-y-0 pl-2">
                                 {/* Mocking mixed timeline items from sessions and medical records */}
-                                {patientData.medicalRecords.map((rec) => (
+                                {(patientData.medicalRecords || []).map((rec) => (
                                     <TimelineItem
                                         key={rec.id}
                                         type="RECORD"
@@ -613,7 +613,7 @@ export const PatientProfile: React.FC = () => {
                             <FileText className="w-5 h-5 text-indigo-600" /> Documentos Recentes
                         </h3>
                         <div className="space-y-3">
-                            {patientData.documents?.map((doc) => (
+                            {(patientData.documents || []).map((doc) => (
                                 <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all cursor-pointer group">
                                     <div className="bg-red-50 p-2 rounded-lg text-red-500 group-hover:bg-white group-hover:shadow-sm transition-all">
                                         <FileText className="w-4 h-4" />
