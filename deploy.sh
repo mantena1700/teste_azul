@@ -4,17 +4,14 @@ echo "🚀 Iniciando Deploy do DOM Azul..."
 echo "⬇️ Baixando atualizações..."
 git pull origin main
 
-echo "🛑 Parando containers..."
-docker-compose stop
+echo "💥 Derrubando tudo (Reset total para evitar erros)..."
+docker-compose down --remove-orphans
 
-echo "🧹 Removendo container frontend antigo..."
-docker-compose rm -f -s frontend
+echo "🧹 Garantindo limpeza de redes..."
+docker network prune -f
 
-echo "🏗️ Reconstruindo frontend (force-recreate)..."
-docker-compose up -d --force-recreate --build frontend
-
-echo "🚀 Subindo backend e caddy..."
-docker-compose up -d --no-deps backend caddy
+echo "🏗️ Reconstruindo e subindo tudo do zero..."
+docker-compose up -d --build --force-recreate
 
 echo "🧹 Limpando imagens antigas..."
 docker image prune -f
