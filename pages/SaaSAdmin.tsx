@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MOCK_CLINICS } from '../constants';
-import { LocalDatabase } from '../services/LocalDatabase';
+import * as ApiService from '../services/ApiService'; // Use API instead of LocalDatabase
 import { Clinic, User as UserType } from '../types';
 import {
     Building2, Plus, Users, CheckCircle, Search, Globe,
@@ -114,19 +114,27 @@ const EMPTY_CLINIC_FORM: Partial<Clinic> = {
 export const SaaSAdmin: React.FC = () => {
     const [activeView, setActiveView] = useState<'DASHBOARD' | 'CLINICS' | 'PLANS' | 'USERS'>('DASHBOARD');
 
-    // Data - Initialize from LocalDatabase
+    // Data - Initialize from ApiService
     const [clinics, setClinics] = useState<Clinic[]>([]);
     const [users, setUsers] = useState<UserType[]>([]);
     const [plans, setPlans] = useState<SaaSPlan[]>(INITIAL_PLANS);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Load clinics from LocalDatabase on mount
+    // Load data from API on mount
     useEffect(() => {
-        LocalDatabase.initialize();
-        const storedClinics = LocalDatabase.getClinics();
-        const storedUsers = LocalDatabase.getUsers();
-        setClinics(storedClinics.length > 0 ? storedClinics : []);
-        setUsers(storedUsers.length > 0 ? storedUsers : []);
+        const loadData = async () => {
+            try {
+                const [fetchedClinics, fetchedUsers] = await Promise.all([
+                    ApiService.getClinics(),
+                    ApiService.getUsers()
+                ]);
+                setClinics(fetchedClinics || []);
+                setUsers(fetchedUsers || []);
+            } catch (error) {
+                console.error("Failed to load SaaS data:", error);
+            }
+        };
+        loadData();
     }, []);
 
     // Modals
@@ -144,63 +152,87 @@ export const SaaSAdmin: React.FC = () => {
 
     // --- LOGIC: CLINICS ---
 
-    const handleSaveClinic = () => {
+    // --- LOGIC: CLINICS ---
+
+    // Helper to refresh data
+    const refreshData = async () => {
+        const [fetchedClinics, fetchedUsers] = await Promise.all([
+            ApiService.getClinics(),
+            ApiService.getUsers()
+        ]);
+        setClinics(fetchedClinics || []);
+        setUsers(fetchedUsers || []);
+    };
+
+    const handleSaveClinic = async () => {
         if (!editingClinic.name || !editingClinic.cnpj) {
             alert("Por favor, preencha os dados obrigatórios (Nome e CNPJ).");
             return;
         }
 
-        if (editingClinic.id) {
-            // Update existing clinic
-            LocalDatabase.updateClinic(editingClinic.id, editingClinic);
+        try {
+            if (editingClinic.id) {
+                // Update existing clinic
+                await ApiService.updateClinic(editingClinic.id, editingClinic);
 
-            // If password or admin email is changed (optional logic, focused on password for now)
-            if (editingClinic.adminTempPassword && editingClinic.adminUserId) {
-                LocalDatabase.updateUser(editingClinic.adminUserId, {
-                    password: editingClinic.adminTempPassword
-                });
+                // If password or admin email is changed
+                if (editingClinic.adminTempPassword && editingClinic.adminUserId) {
+                    await ApiService.updateUser(editingClinic.adminUserId, {
+                        password: editingClinic.adminTempPassword
+                    });
+                }
+            } else {
+                // Create new clinic
+                const newClinicId = `c-${Date.now()}`;
+                const newAdminId = `admin-${Date.now()}`;
+
+                const newClinic: Clinic = {
+                    ...editingClinic,
+                    id: newClinicId,
+                    adminUserId: newAdminId
+                } as Clinic;
+
+                // Create Admin User
+                const newAdminUser: UserType = {
+                    id: newAdminId,
+                    clinicId: newClinicId,
+                    name: adminForm.name || 'Admin',
+                    email: adminForm.email || editingClinic.email, // Fallback
+                    password: editingClinic.adminTempPassword || '123456',
+                    role: 'ADMIN',
+                    avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(adminForm.name || 'Admin')}&background=random`
+                };
+
+                // Create Clinic FIRST
+                await ApiService.createClinic(newClinic);
+                // Then Create User
+                await ApiService.createUser(newAdminUser);
             }
 
-            setClinics(LocalDatabase.getClinics());
-        } else {
-            // Create new clinic
-            const newClinicId = `c-${Date.now()}`;
-            const newAdminId = `admin-${Date.now()}`;
+            await refreshData();
+            setIsClinicModalOpen(false);
+            setAdminForm({ name: '', email: '' });
+            alert("Clínica e Usuário Admin salvos com sucesso!");
 
-            const newClinic: Clinic = {
-                ...editingClinic,
-                id: newClinicId,
-                adminUserId: newAdminId
-            } as Clinic;
-
-            // Create Admin User
-            const newAdminUser: UserType = {
-                id: newAdminId,
-                clinicId: newClinicId,
-                name: adminForm.name || 'Admin',
-                email: adminForm.email || editingClinic.email, // Fallback to corporate email
-                password: editingClinic.adminTempPassword || '123456',
-                role: 'ADMIN',
-                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(adminForm.name || 'Admin')}&background=random`
-            };
-
-            LocalDatabase.addClinic(newClinic);
-            LocalDatabase.addUser(newAdminUser);
-
-            setClinics(LocalDatabase.getClinics());
+        } catch (error) {
+            console.error("Error saving clinic:", error);
+            alert("Erro ao salvar clínica. Verifique o console.");
         }
-        setIsClinicModalOpen(false);
-        // Reset Admin Form for next time
-        setAdminForm({ name: '', email: '' });
-        alert("Clínica e Usuário Admin salvos com sucesso!");
     };
 
-    const toggleClinicStatus = (id: string) => {
-        setClinics(clinics.map(c => c.id === id ? {
-            ...c,
-            active: !c.active,
-            status: !c.active ? 'ACTIVE' : 'BLOCKED'
-        } : c));
+    const toggleClinicStatus = async (id: string) => {
+        const clinic = clinics.find(c => c.id === id);
+        if (!clinic) return;
+
+        try {
+            await ApiService.updateClinic(id, {
+                active: !clinic.active,
+                status: !clinic.active ? 'ACTIVE' : 'BLOCKED'
+            });
+            await refreshData();
+        } catch (error) {
+            console.error("Error toggling clinic status:", error);
+        }
     };
 
     const openNewClinicModal = () => {
@@ -289,43 +321,46 @@ export const SaaSAdmin: React.FC = () => {
         setIsUserModalOpen(true);
     };
 
-    const handleSaveUser = () => {
+    const handleSaveUser = async () => {
         if (!editingUser.name || !editingUser.email || !editingUser.clinicId) {
             alert("Nome, Email e Clínica são obrigatórios.");
             return;
         }
 
-        if (editingUser.id) {
-            // Update
-            LocalDatabase.updateUser(editingUser.id, editingUser);
-        } else {
-            // Create
-            const newUser: UserType = {
-                ...editingUser,
-                id: `u-${Date.now()}`,
-                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(editingUser.name)}&background=random`
-            } as UserType;
-            LocalDatabase.addUser(newUser);
-        }
+        try {
+            if (editingUser.id) {
+                // Update
+                await ApiService.updateUser(editingUser.id, editingUser);
+            } else {
+                // Create
+                const newUser: UserType = {
+                    ...editingUser,
+                    id: `u-${Date.now()}`,
+                    avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(editingUser.name)}&background=random`
+                } as UserType;
+                await ApiService.createUser(newUser);
+            }
 
-        setUsers(LocalDatabase.getUsers());
-        setIsUserModalOpen(false);
+            await refreshData();
+            setIsUserModalOpen(false);
+        } catch (error) {
+            console.error("Error saving user:", error);
+            alert("Erro ao salvar usuário.");
+        }
     };
 
-    const handleDeleteUser = () => {
+    const handleDeleteUser = async () => {
         if (!editingUser.id) return;
         if (confirm('Tem certeza que deseja remover este usuário?')) {
-            // Simulate delete (LocalDatabase might not have deleteUser, so we just filter state or impl delete if mostly needed)
-            // Assuming LocalDatabase needs a deleteUser method or we just hide it. 
-            // For now, let's implement a hard delete in state and try to call DB if exists, or manual filter update
-            // Ideally LocalDatabase should have deleteUser. Let's assume it has or we add it later.
-            // Checking LocalDatabase.ts... it has 'saveUsers'.
-            const currentUsers = LocalDatabase.getUsers();
-            const newUsers = currentUsers.filter(u => u.id !== editingUser.id);
-            localStorage.setItem('dom_users', JSON.stringify(newUsers)); // Direct persistence hack if method missing
-
-            setUsers(newUsers);
-            setIsUserModalOpen(false);
+            try {
+                await ApiService.deleteUser(editingUser.id);
+                await refreshData();
+                setIsUserModalOpen(false);
+                alert('Usuário removido com sucesso!');
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                alert("Erro ao remover usuário.");
+            }
         }
     };
 

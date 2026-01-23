@@ -48,6 +48,12 @@ export async function updateUser(id: string, updates: any): Promise<{ success: b
     });
 }
 
+export async function deleteUser(id: string): Promise<{ success: boolean }> {
+    return apiCall(`/users/${id}`, {
+        method: 'DELETE'
+    });
+}
+
 // ==================== CLINICS ====================
 export async function getClinics(): Promise<any[]> {
     return apiCall('/clinics');
