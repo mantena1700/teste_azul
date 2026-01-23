@@ -10,6 +10,7 @@ import { useData } from '../contexts/DataContext';
 
 export const Financial: React.FC = () => {
     const { sessions, patients, users } = useData();
+    const { user } = useAuth(); // Get user for clinicId
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'TRANSACTIONS' | 'PAYABLES' | 'RECEIVABLES' | 'SERVICES'>('DASHBOARD');
 
     // --- GLOBAL FILTERS STATE ---
@@ -41,14 +42,17 @@ export const Financial: React.FC = () => {
 
     // Load Data
     useEffect(() => {
-        refreshData();
-    }, []);
+        if (user?.clinicId) {
+            refreshData();
+        }
+    }, [user?.clinicId]);
 
     const refreshData = async () => {
+        if (!user?.clinicId) return;
         try {
             const [fetchedTrans, fetchedServices] = await Promise.all([
-                ApiService.getTransactions(),
-                ApiService.getFinancialServices()
+                ApiService.getTransactions({ clinicId: user.clinicId }),
+                ApiService.getFinancialServices(user.clinicId)
             ]);
             setTransactions(fetchedTrans || []);
             setServices(fetchedServices || []);
@@ -175,8 +179,14 @@ export const Financial: React.FC = () => {
             status: newTransaction.status!,
             paymentMethod: newTransaction.paymentMethod,
             entityName: newTransaction.entityName,
-            costCenter: newTransaction.costCenter
+            costCenter: newTransaction.costCenter,
+            entityId: newTransaction.entityId
         };
+
+        // Add clinicId
+        if (user?.clinicId) {
+            (trans as any).clinicId = user.clinicId;
+        }
 
         try {
             await ApiService.createTransaction(trans);
@@ -206,7 +216,9 @@ export const Financial: React.FC = () => {
             name: newService.name,
             defaultPrice: newService.defaultPrice,
             category: newService.category || 'REVENUE_SESSION',
-            description: newService.description
+            description: newService.description,
+            // @ts-ignore
+            clinicId: user?.clinicId
         };
 
         try {
