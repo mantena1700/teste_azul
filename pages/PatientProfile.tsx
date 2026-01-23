@@ -852,81 +852,81 @@ export const PatientProfile: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
-            {/* EDIT MODAL */}
-            {isEditModalOpen && (
-                // ... (existing modal code, untouched by this logic, but ensuring structure is correct)
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    {/* ... keeping existing modal content logic if I were to copy-paste it all, but since I am appending, I will assume it's there. 
+            )}
+                    {/* EDIT MODAL */}
+                    {isEditModalOpen && (
+                        // ... (existing modal code, untouched by this logic, but ensuring structure is correct)
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            {/* ... keeping existing modal content logic if I were to copy-paste it all, but since I am appending, I will assume it's there. 
                        Wait, I need to insert the NEW modal AFTER the existing one. 
                        I will target the closing brace of the component.
                    */}
-                </div>
-            )}
+                        </div>
+                    )}
 
-            {/* NEW: DOCUMENT MODAL */}
-            {isDocModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-indigo-600" /> Adicionar Documento
-                            </h3>
-                            <button onClick={() => setIsDocModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Arquivo/Documento</label>
-                                <input
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
-                                    placeholder="Ex: Laudo Neurológico 2024"
-                                    value={newDocName}
-                                    onChange={e => setNewDocName(e.target.value)}
-                                />
+                    {/* NEW: DOCUMENT MODAL */}
+                    {isDocModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                                <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-indigo-600" /> Adicionar Documento
+                                    </h3>
+                                    <button onClick={() => setIsDocModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nome do Arquivo/Documento</label>
+                                        <input
+                                            className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500"
+                                            placeholder="Ex: Laudo Neurológico 2024"
+                                            value={newDocName}
+                                            onChange={e => setNewDocName(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Categoria</label>
+                                        <select
+                                            className="w-full border border-gray-300 rounded-lg p-2.5 bg-white"
+                                            value={newDocCategory}
+                                            onChange={e => setNewDocCategory(e.target.value as any)}
+                                        >
+                                            <option value="LAUDO">Laudo / Relatório</option>
+                                            <option value="PEI">PEI (Plano de Ensino)</option>
+                                            <option value="VIDEO_MODELING">Vídeo Modelagem</option>
+                                        </select>
+                                    </div>
+                                    <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 text-center">
+                                        <p className="text-xs text-gray-500 mb-2">Simulação: Em produção, aqui seria o upload real.</p>
+                                        <button className="text-indigo-600 font-bold text-xs hover:underline">Escolher Arquivo</button>
+                                    </div>
+                                </div>
+                                <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3">
+                                    <button onClick={() => setIsDocModalOpen(false)} className="flex-1 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
+                                    <button
+                                        onClick={() => {
+                                            if (newDocName && patientData) {
+                                                const newDoc: any = {
+                                                    id: `doc-${Date.now()}`,
+                                                    name: newDocName,
+                                                    type: 'PDF', // Default for now
+                                                    category: newDocCategory,
+                                                    uploadDate: new Date().toISOString()
+                                                };
+                                                const updatedDocs = [...(patientData.documents || []), newDoc];
+                                                updatePatient(patientData.id, { documents: updatedDocs });
+                                                setPatientData({ ...patientData, documents: updatedDocs });
+                                                setIsDocModalOpen(false);
+                                                setNewDocName('');
+                                            }
+                                        }}
+                                        className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                                    >
+                                        Salvar Documento
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Categoria</label>
-                                <select
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 bg-white"
-                                    value={newDocCategory}
-                                    onChange={e => setNewDocCategory(e.target.value as any)}
-                                >
-                                    <option value="LAUDO">Laudo / Relatório</option>
-                                    <option value="PEI">PEI (Plano de Ensino)</option>
-                                    <option value="VIDEO_MODELING">Vídeo Modelagem</option>
-                                </select>
-                            </div>
-                            <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 text-center">
-                                <p className="text-xs text-gray-500 mb-2">Simulação: Em produção, aqui seria o upload real.</p>
-                                <button className="text-indigo-600 font-bold text-xs hover:underline">Escolher Arquivo</button>
-                            </div>
                         </div>
-                        <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3">
-                            <button onClick={() => setIsDocModalOpen(false)} className="flex-1 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition-colors">Cancelar</button>
-                            <button
-                                onClick={() => {
-                                    if (newDocName && patientData) {
-                                        const newDoc: any = {
-                                            id: `doc-${Date.now()}`,
-                                            name: newDocName,
-                                            type: 'PDF', // Default for now
-                                            category: newDocCategory,
-                                            uploadDate: new Date().toISOString()
-                                        };
-                                        const updatedDocs = [...(patientData.documents || []), newDoc];
-                                        updatePatient(patientData.id, { documents: updatedDocs });
-                                        setPatientData({ ...patientData, documents: updatedDocs });
-                                        setIsDocModalOpen(false);
-                                        setNewDocName('');
-                                    }
-                                }}
-                                className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-                            >
-                                Salvar Documento
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    )}
