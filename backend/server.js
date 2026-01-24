@@ -24,6 +24,14 @@ const initDB = async () => {
             const schemaSql = fs.readFileSync(schemaPath, 'utf8');
             console.log('🔄 Applying database schema...');
             await pool.query(schemaSql);
+
+            // Ensure default clinic exists (Fix for FK errors)
+            await pool.query(`
+                INSERT INTO clinics (id, name, corporate_name, cnpj, plan, active, status) 
+                VALUES ('clinic-1', 'Clínica Integrar', 'Integrar Terapias LTDA', '12.345.678/0001-90', 'PRO', true, 'ACTIVE') 
+                ON CONFLICT (id) DO NOTHING;
+            `);
+
             console.log('✅ Database schema applied successfully.');
         } else {
             console.warn('⚠️ Schema file not found at:', schemaPath);
