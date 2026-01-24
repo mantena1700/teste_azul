@@ -496,11 +496,24 @@ app.get('/api/timelogs', async (req, res) => {
 app.post('/api/timelogs', async (req, res) => {
     try {
         const l = req.body;
+        // Ensure clockIn/clockOut are treated as BigInt-compatible values (strings or huge numbers)
+        // JS Date.now() fits in BigInt.
         const result = await pool.query(
             `INSERT INTO time_logs (id, user_id, date, clock_in, clock_out, type, status, justification, related_session_start, photo_url)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              RETURNING *`,
-            [l.id, l.userId, l.date, l.clockIn, l.clockOut, l.type, l.status, l.justification, l.relatedSessionStart, l.photoUrl]
+            [
+                l.id || `tl-${Date.now()}`,
+                l.userId,
+                l.date,
+                l.clockIn, // Ensure this is passed
+                l.clockOut || null,
+                l.type || 'REGULAR',
+                l.status || 'APPROVED',
+                l.justification || null,
+                l.relatedSessionStart || null,
+                l.photoUrl || null
+            ]
         );
         res.json({ success: true, log: result.rows[0] });
     } catch (err) {
