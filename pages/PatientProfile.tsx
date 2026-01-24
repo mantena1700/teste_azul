@@ -14,7 +14,7 @@ import { LineChart, Line, ResponsiveContainer, Tooltip as RechartsTooltip } from
 export const PatientProfile: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { getPatientById, updatePatient, sessions } = useData();
+    const { getPatientById, updatePatient, sessions, users } = useData();
 
     const [activeTab, setActiveTab] = useState<'overview' | 'pei' | 'records' | 'financial'>('overview');
     const [patientData, setPatientData] = useState<Patient | undefined>(undefined);
@@ -479,17 +479,18 @@ export const PatientProfile: React.FC = () => {
                     )}
 
                     {/* TAB: RECORDS (Timeline) */}
+    // TAB: RECORDS (Timeline)
                     {activeTab === 'records' && (
                         <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm animate-in fade-in slide-in-from-bottom-4">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-gray-800 text-lg">Prontuário & Evoluções</h3>
+                                <h3 className="font-bold text-gray-800 text-lg">Prontuário & Histórico de Sessões</h3>
                                 <button className="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg hover:bg-indigo-100">
                                     + Novo Registro
                                 </button>
                             </div>
 
                             <div className="space-y-0 pl-2">
-                                {/* Mocking mixed timeline items from sessions and medical records */}
+                                {/* Medical Records */}
                                 {(patientData.medicalRecords || []).map((rec) => (
                                     <TimelineItem
                                         key={rec.id}
@@ -499,15 +500,34 @@ export const PatientProfile: React.FC = () => {
                                         subtitle={rec.content}
                                     />
                                 ))}
-                                {patientSessions.slice(0, 3).map(sess => (
-                                    <TimelineItem
-                                        key={sess.id}
-                                        type="SESSION"
-                                        date={new Date(sess.startTime).toLocaleDateString() + ' ' + new Date(sess.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        title="Sessão Realizada"
-                                        subtitle={`Sentimento: ${sess.sentiment} | ${sess.trials.length} tentativas registradas.`}
-                                    />
-                                ))}
+
+                                {/* Session History - Full List */}
+                                {patientSessions.length === 0 && (patientData.medicalRecords || []).length === 0 && (
+                                    <p className="text-gray-400 text-sm italic py-4">Nenhum registro encontrado no prontuário.</p>
+                                )}
+
+                                {patientSessions.map(sess => {
+                                    const therapist = users.find(u => u.id === sess.therapistId);
+                                    const therapistName = therapist?.name || 'Terapeuta não identificado';
+                                    const durationMin = sess.endTime && sess.startTime
+                                        ? Math.round((sess.endTime - sess.startTime) / 60000)
+                                        : 0;
+
+                                    return (
+                                        <TimelineItem
+                                            key={sess.id}
+                                            type="SESSION"
+                                            date={new Date(sess.startTime).toLocaleDateString() + ' às ' + new Date(sess.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            title={`Sessão ABA Realizada - ${therapistName}`}
+                                            subtitle={
+                                                <div className="space-y-1">
+                                                    <p>Duração: {durationMin} min | Tentativas: {sess.trials?.length || 0}</p>
+                                                    {sess.notes && <p className="italic text-gray-600">"{sess.notes}"</p>}
+                                                </div>
+                                            }
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
