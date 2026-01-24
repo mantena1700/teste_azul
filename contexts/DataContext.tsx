@@ -84,7 +84,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setPatients(fetchedPatients || []);
             setActivities(fetchedActivities || []);
             setAppointments(fetchedAppointments || []);
-            setSessions(fetchedSessions || []);
+            setSessions((fetchedSessions || []).map((s: any) => ({
+                ...s,
+                startTime: new Date(s.startTime).getTime(),
+                endTime: s.endTime ? new Date(s.endTime).getTime() : undefined
+            })));
             setTransactions(fetchedTransactions || []);
             setFinancialServices(fetchedServices || []);
             setTimeLogs(fetchedTimeLogs || []);
@@ -171,7 +175,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const addSession = async (session: Session) => {
         try {
-            await ApiService.createSession(session);
+            // Ensure payload has clinicId and ISO dates for backend
+            const payload = {
+                ...session,
+                clinicId: session.clinicId || 'clinic-1', // Fallback for dev/admin
+                startTime: new Date(session.startTime).toISOString(),
+                endTime: session.endTime ? new Date(session.endTime).toISOString() : undefined
+            };
+
+            await ApiService.createSession(payload);
 
             // Also update appointment status if exists
             const relatedAppt = appointments.find(a =>
@@ -185,6 +197,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await refreshData();
         } catch (error) {
             console.error('Error saving session:', error);
+            alert("Erro ao salvar a sessão no banco de dados. Verifique a conexão.");
         }
     };
 
