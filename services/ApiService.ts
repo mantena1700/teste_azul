@@ -13,8 +13,10 @@ async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
     });
 
     if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: 'Network error' }));
-        throw new Error(error.message || 'API request failed');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.error || 'API request failed';
+        const errorDetails = errorData.details ? ` (${errorData.details})` : '';
+        throw new Error(`${errorMessage}${errorDetails}`);
     }
 
     return response.json();
