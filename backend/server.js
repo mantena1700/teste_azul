@@ -350,14 +350,27 @@ app.get('/api/sessions', async (req, res) => {
 app.post('/api/sessions', async (req, res) => {
     try {
         const s = req.body;
+        // Postgres TIMESTAMP accepts ISO strings or Date objects. 
+        // Ensure valid inputs from potential millisecond numbers.
+        const startTime = s.startTime ? new Date(s.startTime) : new Date();
+        const endTime = s.endTime ? new Date(s.endTime) : null;
+
         const result = await pool.query(
             `INSERT INTO sessions (id, clinic_id, patient_id, therapist_id, start_time, end_time, status, notes, events, trials, context)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              RETURNING *`,
             [
-                s.id || `s-${Date.now()}`, s.clinicId, s.patientId, s.therapistId,
-                s.startTime, s.endTime, s.status || 'SCHEDULED', s.notes,
-                JSON.stringify(s.events || []), JSON.stringify(s.trials || []), JSON.stringify(s.context)
+                s.id || `s-${Date.now()}`,
+                s.clinicId,
+                s.patientId,
+                s.therapistId,
+                startTime,
+                endTime,
+                s.status || 'SCHEDULED',
+                s.notes,
+                JSON.stringify(s.events || []),
+                JSON.stringify(s.trials || []),
+                JSON.stringify(s.context)
             ]
         );
         res.json({ success: true, session: result.rows[0] });
