@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { MOCK_TIME_LOGS, MOCK_EXPENSES, MOCK_FINANCIAL_SERVICES } from '../constants';
 import { User, TimeLog, PayrollAdjustment, FinancialTransaction, TransactionCategory, TransactionStatus, FinancialService } from '../types';
 import { DollarSign, Download, Calendar, Filter, FileText, TrendingUp, Users, Edit3, Plus, Trash2, X, Save, Wallet, ArrowUpRight, ArrowDownLeft, PieChart, TrendingDown, Briefcase, CreditCard, Landmark, CheckCircle, AlertCircle, Clock, Search, Layers, ChevronDown, ChevronUp, Copy } from 'lucide-react';
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+// import jsPDF from "jspdf";
+// import autoTable from "jspdf-autotable";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import * as ApiService from '../services/ApiService'; // Use API
 import { useData } from '../contexts/DataContext';
@@ -13,6 +13,8 @@ export const Financial: React.FC = () => {
     const { sessions, patients, users } = useData();
     const { user } = useAuth(); // Get user for clinicId
     const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'TRANSACTIONS' | 'PAYABLES' | 'RECEIVABLES' | 'SERVICES'>('DASHBOARD');
+
+    if (!user) return <div className="p-8 text-center text-gray-500">Carregando informações do usuário...</div>;
 
     // --- GLOBAL FILTERS STATE ---
     const [filterDateStart, setFilterDateStart] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]);
