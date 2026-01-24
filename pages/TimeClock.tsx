@@ -6,9 +6,11 @@ import { Clock, LogIn, LogOut, AlertCircle, Calendar, Plus, Save, X, Download, H
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 
 export const TimeClock: React.FC = () => {
-    const { user } = useAuth();
+    const { user } = useAuth(); // Logged in user
+    const { users } = useData(); // All users for admin view
     const role = user?.role || 'THERAPIST';
 
     const [logs, setLogs] = useState<TimeLog[]>([]);
@@ -109,7 +111,7 @@ export const TimeClock: React.FC = () => {
                 await refreshLogs();
 
             } else if (confirmAction === 'OUT') {
-                const myLogs = logs.filter(l => l.userId === user?.id && !l.clockOut && l.type === 'REGULAR');
+                const myLogs = logs.filter(l => l.userId === user?.id && !l.clockOut && l.type === 'REGULAR').sort((a, b) => b.clockIn - a.clockIn);
                 if (myLogs.length > 0) {
                     const activeLog = myLogs[0];
                     await ApiService.updateTimeLog(activeLog.id, { clockOut: exactTime });
@@ -228,7 +230,7 @@ export const TimeClock: React.FC = () => {
 
     const handleExportPDF = () => {
         const doc = new jsPDF();
-        const currentUser = user || MOCK_USERS.find(u => u.id === 'u-1');
+        const currentUser = user || (users || []).find(u => u.id === 'u-1'); // Use real users or fallback
 
         doc.setFillColor(37, 99, 235);
         doc.rect(0, 0, 210, 40, 'F');
@@ -417,16 +419,16 @@ export const TimeClock: React.FC = () => {
                             </h3>
                             <div className="grid gap-4 md:grid-cols-2">
                                 {pendingLogs.map(log => {
-                                    const user = MOCK_USERS.find(u => u.id === log.userId);
+                                    const logUser = users.find(u => u.id === log.userId) || { name: 'Desconhecido', id: 'unknown' };
                                     return (
                                         <div key={log.id} className="bg-white p-4 rounded-lg shadow-sm border border-amber-100 flex flex-col justify-between">
                                             <div>
                                                 <div className="flex justify-between items-start mb-2">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xs">
-                                                            {user?.name[0]}
+                                                            {(logUser.name || '?')[0]}
                                                         </div>
-                                                        <span className="font-bold text-gray-900">{user?.name}</span>
+                                                        <span className="font-bold text-gray-900">{logUser.name}</span>
                                                     </div>
                                                     <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{formatDate(log.date)}</span>
                                                 </div>
@@ -481,16 +483,16 @@ export const TimeClock: React.FC = () => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {allLogs.map(log => {
-                                        const user = MOCK_USERS.find(u => u.id === log.userId);
+                                        const logUser = users.find(u => u.id === log.userId) || { name: 'Desconhecido', id: 'unknown' };
                                         const gap = calculateGap(log);
 
                                         return (
                                             <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                                                 <td className="px-6 py-4 flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500 text-xs">
-                                                        {user?.name.charAt(0)}
+                                                        {(logUser.name || '?').charAt(0)}
                                                     </div>
-                                                    <span className="font-medium text-gray-900">{user?.name}</span>
+                                                    <span className="font-medium text-gray-900">{logUser.name}</span>
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-600">{formatDate(log.date)}</td>
                                                 <td className="px-6 py-4">
