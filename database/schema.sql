@@ -253,3 +253,7 @@ INSERT INTO financial_transactions (id, clinic_id, type, category, description, 
 ('ft-03', 'clinic-1', 'INCOME', 'REVENUE_SESSION', 'Pacote Sessões - Lucas Silva', 1250.00, CURRENT_DATE - INTERVAL '2 days', 'PAID', 'Mariana Silva', 'Clínico'),
 ('ft-04', 'clinic-1', 'INCOME', 'REVENUE_SESSION', 'Avaliação Inicial', 450.00, CURRENT_DATE, 'PENDING', 'Novo Paciente', 'Clínico')
 ON CONFLICT (id) DO NOTHING;
+
+-- Add primary_therapist_id column to patients table
+ALTER TABLE patients ADD COLUMN IF NOT EXISTS primary_therapist_id VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_patients_therapist ON patients(primary_therapist_id);

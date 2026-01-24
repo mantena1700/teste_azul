@@ -271,10 +271,24 @@ export const PatientsList: React.FC = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="col-span-2">
+                                        <div className="col-span-2 md:col-span-1">
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Diagnóstico</label>
                                             <input className="w-full border p-2.5 rounded-lg border-gray-300" placeholder="Ex: TEA Nível 1" value={newPatient.diagnosis} onChange={e => setNewPatient({ ...newPatient, diagnosis: e.target.value })} />
                                         </div>
+                                        <div className="col-span-2 md:col-span-1">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Terapeuta Responsável (Case Manager)</label>
+                                            <select
+                                                className="w-full border p-2.5 rounded-lg border-gray-300 bg-white"
+                                                value={newPatient.primaryTherapistId || ''}
+                                                onChange={e => setNewPatient({ ...newPatient, primaryTherapistId: e.target.value })}
+                                            >
+                                                <option value="">Selecione...</option>
+                                                {therapists.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
                                     </div>
 
                                     <div>

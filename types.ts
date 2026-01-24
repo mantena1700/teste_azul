@@ -229,6 +229,7 @@ export interface Patient {
   documents?: DocumentFile[];
   financialConfig?: ContractConfig;
   schedule?: ScheduleItem[];
+  primaryTherapistId?: string;
 }
 
 export interface Message {

@@ -232,6 +232,7 @@ app.put('/api/clinics/:id', async (req, res) => {
 });
 
 // ==================== PATIENTS ====================
+// ==================== PATIENTS ====================
 app.get('/api/patients', async (req, res) => {
     try {
         const { clinicId } = req.query;
@@ -259,7 +260,8 @@ app.get('/api/patients', async (req, res) => {
             address: p.address,
             notes: p.notes,
             schedule: p.schedule || [],
-            programs: p.programs || []
+            programs: p.programs || [],
+            primaryTherapistId: p.primary_therapist_id
         }));
         res.json(patients);
     } catch (err) {
@@ -273,13 +275,13 @@ app.post('/api/patients', async (req, res) => {
         const p = req.body;
         const result = await pool.query(
             `INSERT INTO patients (id, clinic_id, name, birth_date, diagnosis, photo_url, status,
-             parent_name, parent_phone, parent_email, address, notes, schedule, programs)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+             parent_name, parent_phone, parent_email, address, notes, schedule, programs, primary_therapist_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
              RETURNING *`,
             [
                 p.id || `p-${Date.now()}`, p.clinicId, p.name, p.birthDate, p.diagnosis, p.photoUrl, p.status || 'ACTIVE',
                 p.parentName, p.parentPhone, p.parentEmail, p.address, p.notes,
-                JSON.stringify(p.schedule || []), JSON.stringify(p.programs || [])
+                JSON.stringify(p.schedule || []), JSON.stringify(p.programs || []), p.primaryTherapistId
             ]
         );
         res.json({ success: true, patient: result.rows[0] });
@@ -297,11 +299,11 @@ app.put('/api/patients/:id', async (req, res) => {
         await pool.query(
             `UPDATE patients SET name = $2, birth_date = $3, diagnosis = $4, photo_url = $5, status = $6,
              parent_name = $7, parent_phone = $8, parent_email = $9, address = $10, notes = $11,
-             schedule = $12, programs = $13, updated_at = CURRENT_TIMESTAMP
+             schedule = $12, programs = $13, primary_therapist_id = $14, updated_at = CURRENT_TIMESTAMP
              WHERE id = $1`,
             [id, p.name, p.birthDate, p.diagnosis, p.photoUrl, p.status,
                 p.parentName, p.parentPhone, p.parentEmail, p.address, p.notes,
-                JSON.stringify(p.schedule || []), JSON.stringify(p.programs || [])]
+                JSON.stringify(p.schedule || []), JSON.stringify(p.programs || []), p.primaryTherapistId]
         );
         res.json({ success: true });
     } catch (err) {

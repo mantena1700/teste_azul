@@ -84,11 +84,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setPatients(fetchedPatients || []);
             setActivities(fetchedActivities || []);
             setAppointments(fetchedAppointments || []);
-            setSessions((fetchedSessions || []).map((s: any) => ({
-                ...s,
-                startTime: new Date(s.startTime).getTime(),
-                endTime: s.endTime ? new Date(s.endTime).getTime() : undefined
-            })));
+            setSessions((fetchedSessions || []).map((s: any) => {
+                const parseDate = (d: any) => {
+                    if (!d) return undefined;
+                    const timestamp = new Date(d).getTime();
+                    return isNaN(timestamp) ? Date.now() : timestamp;
+                };
+                return {
+                    ...s,
+                    startTime: parseDate(s.startTime) || Date.now(),
+                    endTime: parseDate(s.endTime)
+                };
+            }));
             setTransactions(fetchedTransactions || []);
             setFinancialServices(fetchedServices || []);
             setTimeLogs(fetchedTimeLogs || []);

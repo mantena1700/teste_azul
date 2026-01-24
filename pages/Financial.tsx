@@ -7,6 +7,7 @@ import autoTable from "jspdf-autotable";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import * as ApiService from '../services/ApiService'; // Use API
 import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Financial: React.FC = () => {
     const { sessions, patients, users } = useData();
@@ -66,27 +67,36 @@ export const Financial: React.FC = () => {
     // --- HELPER: PAYROLL CALCULATION ---
     const calculatePayrollCost = (user: User) => {
         if (!user.financial) return 0;
-        // Filter logs based on the date range provided
-        const userLogs = MOCK_TIME_LOGS.filter(l => {
-            return l.userId === user.id &&
-                l.status === 'APPROVED' &&
-                l.date >= filterDateStart &&
-                l.date <= filterDateEnd;
+
+        // 1. Calculate from Sessions (Therapy Time)
+        // "Informando o horario que ela fez a terapia"
+        const userSessions = sessions.filter(s => {
+            return s.therapistId === user.id &&
+                new Date(s.startTime).toISOString().split('T')[0] >= filterDateStart &&
+                new Date(s.startTime).toISOString().split('T')[0] <= filterDateEnd;
         });
 
-        let totalWorkedMinutes = 0;
-        userLogs.forEach(log => {
-            if (log.clockIn && log.clockOut) {
-                totalWorkedMinutes += (log.clockOut - log.clockIn) / 1000 / 60;
+        let totalSessionMinutes = 0;
+        userSessions.forEach(s => {
+            if (s.startTime && s.endTime) {
+                totalSessionMinutes += (s.endTime - s.startTime) / 1000 / 60;
+            } else {
+                // Fallback for scheduled/incomplete sessions if needed, or skip
+                totalSessionMinutes += 60; // Default 1h if missing end time? Better to stick to real data or duration
             }
         });
-        const hours = totalWorkedMinutes / 60;
+
+        // 2. Calculate from Time Logs (Ponto) - Optional overlap check?
+        // For now, let's prioritize Session Time as requested ("horario que fez a terapia")
+        // If the user is HOURLY, we assume they are paid by clinical hour.
+
+        const hours = totalSessionMinutes / 60;
 
         let cost = 0;
         if (user.financial.salaryType === 'HOURLY') {
             cost = hours * user.financial.baseRate;
         } else {
-            cost = user.financial.baseRate; // Simplification for monthly
+            cost = user.financial.baseRate; // Fixed Monthly Salary
         }
         return cost;
     };
