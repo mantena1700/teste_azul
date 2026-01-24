@@ -202,9 +202,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             await refreshData();
-        } catch (error) {
+            await refreshData();
+        } catch (error: any) {
             console.error('Error saving session:', error);
-            alert("Erro ao salvar a sessão no banco de dados. Verifique a conexão.");
+            const msg = error.response?.data?.details || error.message || "Erro desconhecido";
+            alert(`Erro ao salvar a sessão: ${msg}`);
+            throw error;
         }
     };
 
