@@ -73,9 +73,13 @@ export const Financial: React.FC = () => {
         // 1. Calculate from Sessions (Therapy Time)
         // "Informando o horario que ela fez a terapia"
         const userSessions = sessions.filter(s => {
-            return s.therapistId === user.id &&
-                new Date(s.startTime).toISOString().split('T')[0] >= filterDateStart &&
-                new Date(s.startTime).toISOString().split('T')[0] <= filterDateEnd;
+            try {
+                const d = new Date(s.startTime || Date.now());
+                if (isNaN(d.getTime())) return false;
+                return s.therapistId === user.id &&
+                    d.toISOString().split('T')[0] >= filterDateStart &&
+                    d.toISOString().split('T')[0] <= filterDateEnd;
+            } catch (e) { return false; }
         });
 
         let totalSessionMinutes = 0;
@@ -118,7 +122,7 @@ export const Financial: React.FC = () => {
 
             trans.push({
                 id: `inc-${sess.id}`,
-                date: new Date(sess.startTime).toISOString().split('T')[0],
+                date: !isNaN(new Date(sess.startTime).getTime()) ? new Date(sess.startTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                 description: `Sessão ABA - ${patient.name}`,
                 amount: value,
                 type: 'INCOME',
