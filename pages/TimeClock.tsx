@@ -118,25 +118,30 @@ export const TimeClock: React.FC = () => {
 
                     // AUTOMATIC FINANCIAL CALCULATION
                     if (user?.financial?.baseRate) {
-                        const durationHours = (exactTime - activeLog.clockIn) / 1000 / 60 / 60;
-                        const totalValue = durationHours * user.financial.baseRate;
+                        try {
+                            const durationHours = (exactTime - activeLog.clockIn) / 1000 / 60 / 60;
+                            const totalValue = durationHours * user.financial.baseRate;
 
-                        await ApiService.createTransaction({
-                            id: `trx-payroll-${Date.now()}`,
-                            date: today,
-                            description: `Pagamento de Horas: ${user.name} (${durationHours.toFixed(2)}h)`,
-                            amount: Number(totalValue.toFixed(2)),
-                            type: 'EXPENSE',
-                            category: 'EXPENSE_PAYROLL',
-                            status: 'PENDING', // Pending approval by manager
-                            entityId: user.id,
-                            entityName: user.name,
-                            paymentMethod: 'TRANSFER',
-                            isSystemGenerated: true,
-                            costCenter: 'RH',
-                            // @ts-ignore
-                            clinicId: user?.clinicId
-                        });
+                            await ApiService.createTransaction({
+                                id: `trx-payroll-${Date.now()}`,
+                                date: today,
+                                description: `Pagamento de Horas: ${user.name} (${durationHours.toFixed(2)}h)`,
+                                amount: Number(totalValue.toFixed(2)),
+                                type: 'EXPENSE',
+                                category: 'EXPENSE_PAYROLL',
+                                status: 'PENDING', // Pending approval by manager
+                                entityId: user.id,
+                                entityName: user.name,
+                                paymentMethod: 'TRANSFER',
+                                isSystemGenerated: true,
+                                costCenter: 'RH',
+                                // @ts-ignore
+                                clinicId: user?.clinicId || 'clinic-1'
+                            });
+                        } catch (finError) {
+                            console.error("Failed to generate payroll transaction (non-critical):", finError);
+                            // Do not fail the whole process
+                        }
                     }
                 }
                 await refreshLogs();
