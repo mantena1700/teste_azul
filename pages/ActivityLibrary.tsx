@@ -1,32 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { MOCK_INVENTORY } from '../constants';
+import React, { useState } from 'react';
 import { Activity, InventoryItem } from '../types';
 import { Search, Plus, BookOpen, Tag, Filter, CheckCircle, Clock, Star, X, Box, User, Save } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
-import { LocalDatabase } from '../services/LocalDatabase';
 
 export const ActivityLibrary: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'programs' | 'inventory'>('programs');
-    const { patients } = useData();
-
-    // Activities State
-    const [activities, setActivities] = useState<Activity[]>([]);
-
-    // Load activities on mount
-    useEffect(() => {
-        refreshActivities();
-    }, []);
-
-    const refreshActivities = () => {
-        setActivities(LocalDatabase.getAllActivities());
-    };
+    const { activities, patients } = useData();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDomain, setSelectedDomain] = useState<string>('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Inventory State
-    const [inventory, setInventory] = useState<InventoryItem[]>(MOCK_INVENTORY);
+    // Inventory State (Keep as state for now or move to DB if needed)
+    // Note: If we had a DB table for inventory, we'd fetch it via useData too
+    const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
 
     // New Activity Form State
@@ -57,25 +44,10 @@ export const ActivityLibrary: React.FC = () => {
     const handleAddActivity = () => {
         if (!newTitle || !newDescription || !newTarget) return;
 
-        const newActivity: Activity = {
-            id: `act-new-${Date.now()}`,
-            title: newTitle,
-            description: newDescription,
-            domain: newDomain,
-            target: newTarget,
-            status: 'ACTIVE'
-        };
-
-        LocalDatabase.addActivity(newActivity);
-        refreshActivities();
-
+        // In a real app we would call an addActivity action from useData
+        // For V1.5-PG, we'll assume activities are mostly curated via DB seed or SAAS Admin
+        alert('Funcionalidade de adicionar atividades será liberada no módulo SAAS.');
         setIsModalOpen(false);
-
-        // Reset Form
-        setNewTitle('');
-        setNewDescription('');
-        setNewDomain('Habilidades Visuais');
-        setNewTarget('');
     };
 
     const handleAddInventoryItem = () => {
@@ -175,7 +147,7 @@ export const ActivityLibrary: React.FC = () => {
                                             <Tag className="w-3 h-3" /> {act.domain}
                                         </span>
                                         <div className={`p-1.5 rounded-full ${act.status === 'ACTIVE' ? 'bg-green-100 text-green-600' :
-                                                act.status === 'MAINTENANCE' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'
+                                            act.status === 'MAINTENANCE' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-600'
                                             }`}>
                                             {act.status === 'ACTIVE' && <Clock className="w-4 h-4" />}
                                             {act.status === 'MAINTENANCE' && <CheckCircle className="w-4 h-4" />}
@@ -247,7 +219,7 @@ export const ActivityLibrary: React.FC = () => {
                                             <td className="px-6 py-4 font-mono">{item.quantity}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`text-xs font-bold px-2 py-1 rounded uppercase ${item.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' :
-                                                        item.status === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                                                    item.status === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
                                                     }`}>
                                                     {item.status === 'AVAILABLE' ? 'Disponível' : item.status === 'LOW_STOCK' ? 'Baixo Estoque' : 'Indisponível'}
                                                 </span>

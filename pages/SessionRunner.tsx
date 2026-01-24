@@ -4,6 +4,7 @@ import { BEHAVIOR_OPTIONS, PROMPT_HIERARCHY } from '../constants';
 import { Activity, TrialResult, Trial, Session, SessionEvent, BehaviorType, TokenBoardState, Patient } from '../types';
 import { Play, Pause, CheckCircle, XCircle, Save, Activity as ActivityIcon, ChevronLeft, ArrowRight, HeartPulse, Star, Gift, Settings2, Sparkles, HelpCircle, Layers, Timer, Zap, MessageSquare, ArrowRightCircle, ListChecks, CheckSquare, Hourglass, MessageSquarePlus, Clock, X, User } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export const SessionRunner: React.FC = () => {
     // Session Phases: SETUP (Antecedents) -> PAIRING (Play) -> RUNNING (Data) -> REVIEW

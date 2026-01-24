@@ -10,51 +10,23 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD || 'DomAzul@2026',
 });
 
-const schema = `
--- 9. FINANCIAL SERVICES (Catálogo de Serviços)
-CREATE TABLE IF NOT EXISTS financial_services (
-    id VARCHAR(50) PRIMARY KEY,
-    clinic_id VARCHAR(50),
-    name VARCHAR(255) NOT NULL,
-    default_price DECIMAL(10,2) NOT NULL,
-    category VARCHAR(100),
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 10. TIME LOGS (Ponto Eletrônico)
-CREATE TABLE IF NOT EXISTS time_logs (
-    id VARCHAR(50) PRIMARY KEY,
-    user_id VARCHAR(50),
-    date DATE NOT NULL,
-    clock_in BIGINT NOT NULL,
-    clock_out BIGINT,
-    type VARCHAR(20) DEFAULT 'REGULAR', -- 'REGULAR' or 'MANUAL'
-    status VARCHAR(20) DEFAULT 'APPROVED', -- 'APPROVED', 'PENDING', 'REJECTED'
-    justification TEXT,
-    rejection_reason TEXT,
-    related_session_start BIGINT,
-    photo_url TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_financial_services_clinic ON financial_services(clinic_id);
-CREATE INDEX IF NOT EXISTS idx_time_logs_user ON time_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_time_logs_date ON time_logs(date);
-`;
-
 async function applySChema() {
     try {
         console.log('🔌 Connecting to database...');
         await pool.query('SELECT NOW()');
         console.log('✅ Connected.');
 
-        console.log('📜 Applying schema updates (TimeLogs & FinancialServices)...');
-        await pool.query(schema);
-        console.log('✅ Schema applied successfully.');
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        if (fs.existsSync(schemaPath)) {
+            console.log('📜 Reading schema.sql...');
+            const schema = fs.readFileSync(schemaPath, 'utf8');
+            console.log('🚀 Applying full database schema...');
+            await pool.query(schema);
+            console.log('✅ Schema applied successfully.');
+        } else {
+            console.error('❌ schema.sql not found at:', schemaPath);
+            process.exit(1);
+        }
 
         process.exit(0);
     } catch (err) {

@@ -175,6 +175,9 @@ export const Layout: React.FC = () => {
           <LogOut className="w-4 h-4" />
           Sair do Sistema
         </button>
+        <div className="mt-4 pt-2 border-t border-gray-50 flex justify-center">
+          <span className="text-[10px] text-gray-400 font-mono font-bold tracking-widest opacity-50">V 1.5 - PG</span>
+        </div>
       </div>
     </>
   );

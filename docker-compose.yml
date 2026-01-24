@@ -1,6 +1,53 @@
 version: '3.8'
 
 services:
+  # Database (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: dom-azul-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=domazul
+      - POSTGRES_USER=domazul_user
+      - POSTGRES_PASSWORD=DomAzul@2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dom-azul-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U domazul_user -d domazul" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (Node.js/Express)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dom-azul-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=domazul
+      - DB_USER=domazul_user
+      - DB_PASSWORD=DomAzul@2026
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dom-azul-net
+
   # Frontend (React/Vite)
   frontend:
     build:
@@ -8,7 +55,6 @@ services:
       dockerfile: Dockerfile
     container_name: dom-azul-frontend
     restart: unless-stopped
-    # Ports removed, access via Caddy
     environment:
       - NODE_ENV=production
     depends_on:
@@ -35,40 +81,11 @@ services:
     networks:
       - dom-azul-net
 
-  # Backend API (Node.js/Express)
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: dom-azul-backend
-    restart: unless-stopped
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - DB_HOST=host.docker.internal
-      - DB_PORT=5432
-      - DB_NAME=domazul
-      - DB_USER=domazul_user
-      - DB_PASSWORD=DomAzul@2026
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - dom-azul-net
-
 networks:
   dom-azul-net:
     driver: bridge
 
 volumes:
+  postgres_data:
   caddy_data:
   caddy_config:
-
-    # Note: PostgreSQL runs directly on the host (not in Docker)
-    # This allows persistent data and easier management
