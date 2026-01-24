@@ -238,3 +238,18 @@ INSERT INTO activities (id, clinic_id, title, description, instruction, domain, 
 ('act-04', NULL, 'Mando - Itens Preferidos', 'Solicitar itens usando PECS ou gestos.', 'Espere a iniciativa da crianÃ§a', 'ComunicaÃ§Ã£o (Mando)', 'SolicitaÃ§Ã£o 3x por sessÃ£o', 'ACTIVE'),
 ('act-05', NULL, 'Tato - Objetos Comuns', 'Nomear objetos ao ver o item.', 'Pergunte: "O que Ã© isso?"', 'Linguagem Expressiva (Tato)', 'Nomear 10 itens', 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
+
+-- Insert default Financial Services
+INSERT INTO financial_services (id, clinic_id, name, default_price, category, description) VALUES
+('fs-01', 'clinic-1', 'Sessão ABA (1h)', 250.00, 'REVENUE_SESSION', 'Sessão de terapia comportamental padrão'),
+('fs-02', 'clinic-1', 'Avaliação Multidisciplinar', 450.00, 'REVENUE_SESSION', 'Avaliação inicial completa'),
+('fs-03', 'clinic-1', 'Supervisão Escolar', 300.00, 'REVENUE_SESSION', 'Visita e orientação escolar')
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert default Financial Transactions
+INSERT INTO financial_transactions (id, clinic_id, type, category, description, amount, date, status, entity_name, cost_center) VALUES
+('ft-01', 'clinic-1', 'EXPENSE', 'EXPENSE_RENT', 'Aluguel Clínica', 2500.00, CURRENT_DATE - INTERVAL '5 days', 'PAID', 'Imobiliária Central', 'Infraestrutura'),
+('ft-02', 'clinic-1', 'EXPENSE', 'EXPENSE_SOFTWARE', 'Licença SaaS Dom Azul', 499.00, CURRENT_DATE - INTERVAL '10 days', 'PAID', 'Dom Azul Sistemas', 'Infraestrutura'),
+('ft-03', 'clinic-1', 'INCOME', 'REVENUE_SESSION', 'Pacote Sessões - Lucas Silva', 1250.00, CURRENT_DATE - INTERVAL '2 days', 'PAID', 'Mariana Silva', 'Clínico'),
+('ft-04', 'clinic-1', 'INCOME', 'REVENUE_SESSION', 'Avaliação Inicial', 450.00, CURRENT_DATE, 'PENDING', 'Novo Paciente', 'Clínico')
+ON CONFLICT (id) DO NOTHING;

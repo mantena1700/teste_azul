@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Patient, User, Appointment, Session, Activity } from '../types';
+import { Patient, User, Appointment, Session, Activity, FinancialTransaction, FinancialService, TimeLog } from '../types';
 import * as ApiService from '../services/ApiService';
 import { useAuth } from './AuthContext';
 
@@ -13,6 +13,9 @@ interface DataContextType {
     appointments: Appointment[];
     activities: Activity[];
     sessions: Session[];
+    transactions: FinancialTransaction[];
+    financialServices: FinancialService[];
+    timeLogs: TimeLog[];
 
     // Actions
     addPatient: (patient: Patient) => Promise<void>;
@@ -40,6 +43,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [activities, setActivities] = useState<Activity[]>([]);
     const [sessions, setSessions] = useState<Session[]>([]);
+    const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
+    const [financialServices, setFinancialServices] = useState<FinancialService[]>([]);
+    const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Fetch all data from API
@@ -49,12 +55,29 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Fetch in parallel for speed
             // Note: If user is logged in, we could pass filters. 
             // For now, fetching all data the user has access to.
-            const [fetchedUsers, fetchedPatients, fetchedActivities, fetchedAppointments, fetchedSessions] = await Promise.all([
+
+            // Determine clinicId if available (for financial data filtering if needed)
+            const clinicId = user?.clinicId;
+
+            const [
+                fetchedUsers,
+                fetchedPatients,
+                fetchedActivities,
+                fetchedAppointments,
+                fetchedSessions,
+                fetchedTransactions,
+                fetchedServices,
+                fetchedTimeLogs
+            ] = await Promise.all([
                 ApiService.getUsers(),
                 ApiService.getPatients(),
                 ApiService.getActivities(),
                 ApiService.getAppointments(),
-                ApiService.getSessions()
+                ApiService.getSessions(),
+                // Fetch financial data - assuming API handles permission checks or returns empty if not allowed
+                ApiService.getTransactions(clinicId ? { clinicId } : undefined),
+                ApiService.getFinancialServices(clinicId),
+                ApiService.getTimeLogs()
             ]);
 
             setUsers(fetchedUsers || []);
@@ -62,6 +85,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setActivities(fetchedActivities || []);
             setAppointments(fetchedAppointments || []);
             setSessions(fetchedSessions || []);
+            setTransactions(fetchedTransactions || []);
+            setFinancialServices(fetchedServices || []);
+            setTimeLogs(fetchedTimeLogs || []);
 
             console.log('✅ Data synced with PostgreSQL DB');
         } catch (error) {
@@ -172,6 +198,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             appointments,
             activities,
             sessions,
+            transactions,
+            financialServices,
+            timeLogs,
             addPatient,
             updatePatient,
             addAppointment,
