@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,6 +15,26 @@ const pool = new Pool({
     user: process.env.DB_USER || 'domazul_user',
     password: process.env.DB_PASSWORD || 'DomAzul@2026',
 });
+
+// Init Database Schema
+const initDB = async () => {
+    try {
+        const schemaPath = path.join(__dirname, '..', 'database', 'schema.sql');
+        if (fs.existsSync(schemaPath)) {
+            const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+            console.log('🔄 Applying database schema...');
+            await pool.query(schemaSql);
+            console.log('✅ Database schema applied successfully.');
+        } else {
+            console.warn('⚠️ Schema file not found at:', schemaPath);
+        }
+    } catch (err) {
+        console.error('❌ Failed to initialize database:', err);
+    }
+};
+
+// Run migration on start
+initDB();
 
 // Middleware
 app.use(cors());
