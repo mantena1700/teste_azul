@@ -1,3 +1,9 @@
+# Acesso via IP (HTTP apenas)
+:80 {
+    reverse_proxy frontend:80
+}
+
+# Acesso via domínio (HTTPS automático)
 domazul.domseven.com.br {
     reverse_proxy frontend:80
 }
